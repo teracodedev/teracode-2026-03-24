@@ -38,6 +38,8 @@ export default function KakuchoPage() {
   const [records, setRecords] = useState<KakuchoRecord[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -81,7 +83,7 @@ export default function KakuchoPage() {
           type="text"
           placeholder="法名・俗名・戸主名で検索..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="flex-1 border border-stone-300 rounded-lg px-4 py-2 text-base text-stone-800 bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
       </div>
@@ -98,7 +100,7 @@ export default function KakuchoPage() {
       ) : (
         <>
           <div className="md:hidden space-y-2">
-            {records.map((record) => (
+            {records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((record) => (
               <div
                 key={record.id}
                 className="bg-white rounded-xl border border-stone-200 px-4 py-3 shadow-sm active:bg-stone-50 cursor-pointer"
@@ -141,7 +143,7 @@ export default function KakuchoPage() {
               )}
               </div>
             ))}
-            <div className="text-xs text-stone-400 px-1 pt-1">{records.length}件</div>
+            <div className="text-xs text-stone-400 px-1 pt-1">{records.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, records.length)}〜{Math.min(currentPage * PAGE_SIZE, records.length)}件表示</div>
           </div>
 
           <div className="hidden md:block bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
@@ -158,7 +160,7 @@ export default function KakuchoPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {records.map((record) => (
+                {records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((record) => (
                   <tr key={record.id} className="hover:bg-stone-50">
                     <td className="px-4 py-3 text-stone-600">
                       {record.householder.familyRegister ? (
@@ -210,9 +212,30 @@ export default function KakuchoPage() {
               </tbody>
             </table>
             <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-xs text-stone-400">
-              {records.length}件
+              {records.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, records.length)}〜{Math.min(currentPage * PAGE_SIZE, records.length)}件表示
             </div>
           </div>
+
+          {/* ページネーション */}
+          {Math.ceil(records.length / PAGE_SIZE) > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← 前へ
+              </button>
+              <span className="text-sm text-stone-500">{currentPage} / {Math.ceil(records.length / PAGE_SIZE)}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(records.length / PAGE_SIZE), p + 1))}
+                disabled={currentPage === Math.ceil(records.length / PAGE_SIZE)}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                次へ →
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

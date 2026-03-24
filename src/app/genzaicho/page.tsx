@@ -56,6 +56,8 @@ export default function GenzaichoPage() {
   const [records, setRecords] = useState<GenzaichoRecord[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const fetchRecords = useCallback(async () => {
     setLoading(true);
@@ -99,7 +101,7 @@ export default function GenzaichoPage() {
           type="text"
           placeholder="氏名・戸主名・住所で検索..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="flex-1 border border-stone-300 rounded-lg px-4 py-2 text-base text-stone-800 bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
       </div>
@@ -114,7 +116,7 @@ export default function GenzaichoPage() {
       ) : (
         <>
           <div className="md:hidden space-y-2">
-            {records.map((record) => (
+            {records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((record) => (
               <div
                 key={record.id}
                 className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden cursor-pointer active:bg-stone-50"
@@ -126,8 +128,8 @@ export default function GenzaichoPage() {
                       <div className="font-medium text-stone-800 text-base">
                         {record.familyName} {record.givenName || ""}
                       </div>
-                      {(record.familyNameKana || record.givenNameKana) && (
-                        <div className="text-sm text-stone-400">{record.familyNameKana || ""} {record.givenNameKana || ""}</div>
+                      {record.familyNameKana && (
+                        <div className="text-xs text-stone-400">{record.familyNameKana} {record.givenNameKana}</div>
                       )}
                       <div className="text-sm text-stone-500 mt-1 flex flex-wrap gap-x-2">
                         {record.relation && <span>{record.relation}</span>}
@@ -158,7 +160,7 @@ export default function GenzaichoPage() {
                 )}
               </div>
             ))}
-            <div className="text-sm text-stone-400 px-1 pt-1">{records.length}名</div>
+            <div className="text-sm text-stone-400 px-1 pt-1">{records.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, records.length)}〜{Math.min(currentPage * PAGE_SIZE, records.length)}件表示</div>
           </div>
 
           <div className="hidden md:block bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
@@ -166,8 +168,7 @@ export default function GenzaichoPage() {
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">家族・親族台帳</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">姓</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">名</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">氏名</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">続柄</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">生年月日</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">年齢</th>
@@ -176,7 +177,7 @@ export default function GenzaichoPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {records.map((record) => (
+                {records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((record) => (
                   <Fragment key={record.id}>
                     <tr className="hover:bg-stone-50">
                       <td className="px-4 py-3 text-stone-600">
@@ -191,14 +192,13 @@ export default function GenzaichoPage() {
                           <span className="text-stone-300 text-sm">未設定</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 font-medium text-stone-700">
-                        {record.familyName}
-                      </td>
-                      <td className="px-4 py-3 font-medium text-stone-700">
-                        {record.givenName || ""}
-                        {(record.familyNameKana || record.givenNameKana) && (
-                          <div className="text-xs text-stone-400 font-normal">
-                            {record.familyNameKana || ""} {record.givenNameKana || ""}
+                      <td className="px-4 py-3">
+                        <Link href={"/members/" + record.id} className="font-medium text-stone-800 hover:text-amber-700 hover:underline">
+                          {record.familyName} {record.givenName || ""}
+                        </Link>
+                        {record.familyNameKana && (
+                          <div className="text-xs text-stone-400">
+                            {record.familyNameKana} {record.givenNameKana}
                           </div>
                         )}
                       </td>
@@ -225,9 +225,30 @@ export default function GenzaichoPage() {
               </tbody>
             </table>
             <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-sm text-stone-400">
-              {records.length}名
+              {records.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, records.length)}〜{Math.min(currentPage * PAGE_SIZE, records.length)}件表示
             </div>
           </div>
+
+          {/* ページネーション */}
+          {Math.ceil(records.length / PAGE_SIZE) > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← 前へ
+              </button>
+              <span className="text-sm text-stone-500">{currentPage} / {Math.ceil(records.length / PAGE_SIZE)}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(records.length / PAGE_SIZE), p + 1))}
+                disabled={currentPage === Math.ceil(records.length / PAGE_SIZE)}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                次へ →
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>
