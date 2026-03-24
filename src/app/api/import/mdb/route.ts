@@ -83,6 +83,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ───── 既存データをクリア（外部キー制約の順序で削除） ─────
+  await prisma.ceremonyParticipant.deleteMany();
+  await prisma.householderMember.deleteMany();
+  await prisma.householder.deleteMany();
+  await prisma.familyRegister.deleteMany();
+
   // 台帳ID（MDB整数） → 新しい Householder UUID のマップ
   const idMap = new Map<number, string>();
 
