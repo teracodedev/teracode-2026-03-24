@@ -70,6 +70,18 @@ export async function POST(req: NextRequest) {
   const householderRows = reader.getTable("UTB001_戸主").getData();
   // 家族テーブルを読み込む（存在する場合）
   const familyRows = hasFamily ? reader.getTable("UTB002_家族").getData() : [];
+  // 家族住所テーブルを読み込む（存在する場合）
+  const hasAddress = tableNames.includes("UTB003_家族住所");
+  const addressRows = hasAddress ? reader.getTable("UTB003_家族住所").getData() : [];
+
+  // 家族住所を家族IDでインデックス化（家族ID → 住所行）
+  const addressByFamilyId = new Map<number, Record<string, unknown>>();
+  for (const addr of addressRows) {
+    const fid = addr["家族ID"] as number;
+    if (fid && !addressByFamilyId.has(fid)) {
+      addressByFamilyId.set(fid, addr);
+    }
+  }
 
   // 台帳ID（MDB整数） → 新しい Householder UUID のマップ
   const idMap = new Map<number, string>();
@@ -138,6 +150,10 @@ export async function POST(req: NextRequest) {
       const [familyName, givenName] = splitName(row["氏名"]);
       const [familyNameKana, givenNameKana] = splitName(row["ﾌﾘｶﾞﾅ"]);
 
+      // UTB003_家族住所 から住所データを取得
+      const familyId = row["家族ID"] as number;
+      const addr = familyId ? addressByFamilyId.get(familyId) : undefined;
+
       await prisma.householderMember.create({
         data: {
           householderId,
@@ -153,6 +169,14 @@ export async function POST(req: NextRequest) {
           relation: str(row["続柄"]),
           note: str(row["個人備考"]),
           domicile: str(row["本籍"]),
+          // UTB003_家族住所 のデータがあれば住所・電話を設定
+          postalCode: addr ? str(addr["〒"]) : null,
+          address1: addr ? str(addr["住所1"]) : null,
+          address2: addr ? str(addr["住所2"]) : null,
+          address3: addr ? str(addr["住所3"]) : null,
+          phone1: addr ? str(addr["電話"]) : null,
+          fax: addr ? str(addr["ＦＡＸ"]) : null,
+          phone2: addr ? str(addr["携帯"]) : null,
         },
       });
       memberCount++;
