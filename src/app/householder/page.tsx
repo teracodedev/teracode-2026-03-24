@@ -27,6 +27,8 @@ export default function HouseholderPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: number; errors: number; results: { file: string; status: string; name?: string; error?: string }[] } | null>(null);
 
@@ -126,14 +128,14 @@ export default function HouseholderPage() {
           type="text"
           placeholder="氏名・住所で検索..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="flex-1 border border-stone-300 rounded-lg px-4 py-2 text-base text-stone-800 bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
         <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
           <input
             type="checkbox"
             checked={showInactive}
-            onChange={(e) => setShowInactive(e.target.checked)}
+            onChange={(e) => { setShowInactive(e.target.checked); setCurrentPage(1); }}
             className="rounded"
           />
           離檀者も表示
@@ -155,15 +157,13 @@ export default function HouseholderPage() {
         <>
           {/* モバイル: カード表示 */}
           <div className="md:hidden space-y-2">
-            {householderList.map((householder) => (
+            {householderList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((householder) => (
               <div
                 key={householder.id}
                 className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden"
               >
                 <Link
-                  href={householder.familyRegister
-                    ? `/family-register/${householder.familyRegister.id}`
-                    : `/householder/${householder.id}`}
+                  href={`/householder/${householder.id}`}
                   className="block px-4 py-3 active:bg-stone-50"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -207,7 +207,7 @@ export default function HouseholderPage() {
                 )}
               </div>
             ))}
-            <div className="text-xs text-stone-400 px-1 pt-1">{householderList.length}件</div>
+            <div className="text-xs text-stone-400 px-1 pt-1">{householderList.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, householderList.length)}〜{Math.min(currentPage * PAGE_SIZE, householderList.length)}件表示</div>
           </div>
 
           {/* デスクトップ: テーブル表示 */}
@@ -224,7 +224,7 @@ export default function HouseholderPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {householderList.map((householder) => (
+                {householderList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((householder) => (
                   <tr key={householder.id} className="hover:bg-stone-50">
                     <td className="px-4 py-3 text-stone-600">
                       {householder.familyRegister ? (
@@ -240,9 +240,7 @@ export default function HouseholderPage() {
                     </td>
                     <td className="px-4 py-3">
                       <Link
-                        href={householder.familyRegister
-                          ? `/family-register/${householder.familyRegister.id}`
-                          : `/householder/${householder.id}`}
+                        href={`/householder/${householder.id}`}
                         className="font-medium text-stone-800 hover:text-amber-700 hover:underline"
                       >
                         {householder.familyName} {householder.givenName}
@@ -273,9 +271,30 @@ export default function HouseholderPage() {
               </tbody>
             </table>
             <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-xs text-stone-400">
-              {householderList.length}件
+              {householderList.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, householderList.length)}〜{Math.min(currentPage * PAGE_SIZE, householderList.length)}件表示
             </div>
           </div>
+
+          {/* ページネーション */}
+          {Math.ceil(householderList.length / PAGE_SIZE) > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← 前へ
+              </button>
+              <span className="text-sm text-stone-500">{currentPage} / {Math.ceil(householderList.length / PAGE_SIZE)}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(householderList.length / PAGE_SIZE), p + 1))}
+                disabled={currentPage === Math.ceil(householderList.length / PAGE_SIZE)}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                次へ →
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

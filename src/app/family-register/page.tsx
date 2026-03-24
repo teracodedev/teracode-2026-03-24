@@ -25,6 +25,8 @@ export default function FamilyRegisterPage() {
   const [list, setList] = useState<FamilyRegister[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -74,7 +76,7 @@ export default function FamilyRegisterPage() {
           type="text"
           placeholder="台帳名・戸主氏名で検索..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="w-full border border-stone-300 rounded-lg px-4 py-2 text-base text-stone-800 bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
       </div>
@@ -98,7 +100,7 @@ export default function FamilyRegisterPage() {
         <>
           {/* モバイル: カード表示 */}
           <div className="md:hidden space-y-2">
-            {list.map((r) => {
+            {list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((r) => {
               const hh = r.householders[0];
               const memberCount = r.householders.reduce((s, h) => s + (h._count?.members ?? 0), 0);
               return (
@@ -141,7 +143,7 @@ export default function FamilyRegisterPage() {
                 </Link>
               );
             })}
-            <div className="text-xs text-stone-400 px-1 pt-1">{list.length}件</div>
+            <div className="text-xs text-stone-400 px-1 pt-1">{list.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, list.length)}〜{Math.min(currentPage * PAGE_SIZE, list.length)}件表示</div>
           </div>
 
           {/* デスクトップ: テーブル表示 */}
@@ -158,7 +160,7 @@ export default function FamilyRegisterPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
-                {list.map((r) => {
+                {list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((r) => {
                   const hh = r.householders[0];
                   const memberCount = r.householders.reduce((s, h) => s + (h._count?.members ?? 0), 0);
                   return (
@@ -212,9 +214,30 @@ export default function FamilyRegisterPage() {
               </tbody>
             </table>
             <div className="px-4 py-3 bg-stone-50 border-t border-stone-200 text-xs text-stone-400">
-              {list.length}件
+              {list.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, list.length)}〜{Math.min(currentPage * PAGE_SIZE, list.length)}件表示
             </div>
           </div>
+
+          {/* ページネーション */}
+          {Math.ceil(list.length / PAGE_SIZE) > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ← 前へ
+              </button>
+              <span className="text-sm text-stone-500">{currentPage} / {Math.ceil(list.length / PAGE_SIZE)}</span>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(list.length / PAGE_SIZE), p + 1))}
+                disabled={currentPage === Math.ceil(list.length / PAGE_SIZE)}
+                className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                次へ →
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

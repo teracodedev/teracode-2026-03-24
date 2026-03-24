@@ -49,6 +49,8 @@ export default function CeremoniesPage() {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const fetchCeremonies = useCallback(async () => {
     setLoading(true);
@@ -89,12 +91,12 @@ export default function CeremoniesPage() {
           type="text"
           placeholder="名称で検索..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="flex-1 min-w-48 border border-stone-300 rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
         <select
           value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
+          onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
           className="border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400 bg-white"
         >
           <option value="">全ての種別</option>
@@ -104,7 +106,7 @@ export default function CeremoniesPage() {
         </select>
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
           className="border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400 bg-white"
         >
           <option value="">全てのステータス</option>
@@ -124,8 +126,9 @@ export default function CeremoniesPage() {
           </Link>
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {ceremonies.map((ceremony) => (
+          {ceremonies.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((ceremony) => (
             <Link
               key={ceremony.id}
               href={`/ceremonies/${ceremony.id}`}
@@ -154,6 +157,28 @@ export default function CeremoniesPage() {
             </Link>
           ))}
         </div>
+
+        {/* ページネーション */}
+        {Math.ceil(ceremonies.length / PAGE_SIZE) > 1 && (
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              ← 前へ
+            </button>
+            <span className="text-sm text-stone-500">{currentPage} / {Math.ceil(ceremonies.length / PAGE_SIZE)}</span>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(Math.ceil(ceremonies.length / PAGE_SIZE), p + 1))}
+              disabled={currentPage === Math.ceil(ceremonies.length / PAGE_SIZE)}
+              className="px-3 py-1.5 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              次へ →
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
