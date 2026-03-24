@@ -1,0 +1,149 @@
+// テラコード - 寺院管理システム
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 家族・親族台帳
+model FamilyRegister {
+  id           String    @id @default(uuid())
+  registerCode String    @unique @default(uuid())
+  name         String    // 台帳名（例: 山田家）
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  householders Householder[]
+}
+
+// 檀家（法人・個人）
+model Householder {
+  id               String    @id @default(uuid())
+  householderCode  String    @unique @default(uuid()) // 檀家番号（UUID）
+  familyName       String    // 姓
+  givenName        String    // 名
+  familyNameKana   String?   // 姓（カナ）
+  givenNameKana    String?   // 名（カナ）
+  postalCode       String?   // 郵便番号
+  address1         String?   // 住所1（都道府県・市区町村）
+  address2         String?   // 住所2（丁目・番地）
+  address3         String?   // 住所3（建物名・部屋番号）
+  phone1           String?   // 電話番号1
+  phone2           String?   // 電話番号2
+  fax              String?   // FAX番号
+  email            String?   // メールアドレス
+  domicile         String?   // 本籍地
+  gender           String?   // 性別
+  birthDate        DateTime? // 生年月日
+  deathDate        DateTime? // 命日
+  dharmaName       String?   // 法名
+  dharmaNameKana   String?   // 法名（カナ）
+  note             String?   // 備考
+  joinedAt         DateTime? // 入檀日
+  leftAt           DateTime? // 離檀日
+  isActive         Boolean   @default(true) // 在籍フラグ
+  familyRegisterId String?   @unique // 家族・親族台帳ID（1:1）
+  familyRegister   FamilyRegister? @relation(fields: [familyRegisterId], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  members    HouseholderMember[]    // 世帯員
+  ceremonies CeremonyParticipant[]  // 法要参加
+}
+
+// 世帯員（檀家家族）
+model HouseholderMember {
+  id             String      @id @default(uuid())
+  householderId  String
+  householder    Householder @relation(fields: [householderId], references: [id], onDelete: Cascade)
+  familyName     String      // 姓
+  givenName      String?     // 名
+  familyNameKana String?     // 姓（カナ）
+  givenNameKana  String?     // 名（カナ）
+  relation       String?     // 続柄（世帯主、妻、子など）
+  postalCode     String?     // 郵便番号
+  address1       String?     // 住所1（都道府県・市区町村）
+  address2       String?     // 住所2（丁目・番地）
+  address3       String?     // 住所3（建物名・部屋番号）
+  phone1         String?     // 電話番号1
+  phone2         String?     // 電話番号2
+  fax            String?     // FAX番号
+  email          String?     // メールアドレス
+  domicile       String?     // 本籍地
+  gender         String?     // 性別
+  birthDate      DateTime?   // 生年月日
+  deathDate      DateTime?   // 命日
+  dharmaName     String?     // 法名
+  dharmaNameKana String?     // 法名（カナ）
+  note           String?     // 備考
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+// 法要・行事
+model Ceremony {
+  id            String    @id @default(uuid())
+  title         String    // 法要・行事名
+  ceremonyType  CeremonyType // 種別
+  scheduledAt   DateTime  // 開催日時
+  endAt         DateTime? // 終了日時
+  location      String?   // 場所
+  description   String?   // 説明
+  maxAttendees  Int?      // 定員
+  fee           Int?      // 費用（円）
+  status        CeremonyStatus @default(SCHEDULED) // ステータス
+  note          String?   // 備考
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  participants  CeremonyParticipant[] // 参加者
+}
+
+// 法要種別
+enum CeremonyType {
+  MEMORIAL       // 法要（年忌法要など）
+  REGULAR        // 定例行事（彼岸、盂蘭盆など）
+  FUNERAL        // 葬儀・告別式
+  SPECIAL        // 特別行事
+  OTHER          // その他
+}
+
+// 法要ステータス
+enum CeremonyStatus {
+  SCHEDULED      // 予定
+  COMPLETED      // 完了
+  CANCELLED      // 中止
+}
+
+// ユーザー（ログインアカウント）
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 法要参加者
+model CeremonyParticipant {
+  id             String      @id @default(uuid())
+  ceremonyId     String
+  ceremony       Ceremony    @relation(fields: [ceremonyId], references: [id], onDelete: Cascade)
+  householderId  String
+  householder    Householder @relation(fields: [householderId], references: [id], onDelete: Cascade)
+  attendees      Int         @default(1) // 参加人数
+  offering       Int?        // 御布施（円）
+  note           String?     // 備考
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([ceremonyId, householderId])
+}

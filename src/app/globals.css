@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+html {
+  font-size: 18px;
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ライトテーマ固定（OS ダークモードでも本文が薄字にならないようにする） */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+input, textarea, select {
+  color: #000000;
+}

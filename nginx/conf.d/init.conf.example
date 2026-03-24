@@ -1,0 +1,21 @@
+# 証明書取得前の一時設定（HTTPのみ）
+# 使い方:
+#   cp nginx/conf.d/init.conf.example nginx/conf.d/default.conf
+#   docker compose up -d nginx
+#   bash nginx/init-cert.sh your@email.com
+#   cp nginx/conf.d/default.conf.bak nginx/conf.d/default.conf  ← 元に戻す
+#   docker compose restart nginx
+
+server {
+  listen 80;
+  server_name teracode6.zenpoji.or.jp;
+
+  location /.well-known/acme-challenge/ {
+    root /var/www/certbot;
+  }
+
+  location / {
+    return 200 'waiting for cert...';
+    add_header Content-Type text/plain;
+  }
+}
