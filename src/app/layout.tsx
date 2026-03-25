@@ -1,19 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { auth } from "@/auth";
 import NavMenu from "@/components/NavMenu";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -38,7 +27,7 @@ export default async function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased bg-gray-50 text-stone-900`}
+        className="font-sans antialiased bg-gray-50 text-stone-900"
       >
         <script
           dangerouslySetInnerHTML={{ __html: CHUNK_RECOVERY_INLINE }}
