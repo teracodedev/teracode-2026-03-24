@@ -215,17 +215,26 @@ export default function HouseholderPage() {
             <table className="w-full text-base">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">家族・親族台帳</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">氏名</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">戸主氏名</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">フリガナ</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">所属グループ</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">住所</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">世帯員数</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">状態</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号1</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号2</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">詳細・編集</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {householderList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((householder) => (
                   <tr key={householder.id} className="hover:bg-stone-50">
+                    <td className="px-4 py-3 text-stone-800">
+                      {householder.familyName} {householder.givenName}
+                    </td>
+                    <td className="px-4 py-3 text-stone-600">
+                      {householder.familyNameKana || householder.givenNameKana
+                        ? `${householder.familyNameKana ?? ""} ${householder.givenNameKana ?? ""}`.trim()
+                        : "-"}
+                    </td>
                     <td className="px-4 py-3 text-stone-600">
                       {householder.familyRegister ? (
                         <Link
@@ -238,33 +247,15 @@ export default function HouseholderPage() {
                         <span className="text-stone-300 text-sm">未設定</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/householder/${householder.id}`}
-                        className="font-medium text-stone-800 hover:text-amber-700 hover:underline"
-                      >
-                        {householder.familyName} {householder.givenName}
-                      </Link>
-                      {householder.familyNameKana && (
-                        <div className="text-xs text-stone-400">
-                          {householder.familyNameKana} {householder.givenNameKana}
-                        </div>
-                      )}
-                    </td>
                     <td className="px-4 py-3 text-stone-600">
                       {[householder.address1, householder.address2, householder.address3].filter(Boolean).join(" ") || "-"}
                     </td>
-                    <td className="px-4 py-3 text-stone-600">
-                      {householder.phone1 || "-"}
-                      {householder.phone2 && <div className="text-xs text-stone-400">{householder.phone2}</div>}
-                    </td>
-                    <td className="px-4 py-3 text-stone-600">{householder.members.length}名</td>
+                    <td className="px-4 py-3 text-stone-600">{householder.phone1 || ""}</td>
+                    <td className="px-4 py-3 text-stone-600">{householder.phone2 || ""}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        householder.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"
-                      }`}>
-                        {householder.isActive ? "在籍" : "離檀"}
-                      </span>
+                      <Link href={`/householder/${householder.id}`} className="text-amber-700 hover:underline text-sm">詳細</Link>
+                      <span className="text-stone-300 mx-1">・</span>
+                      <Link href={`/householder/${householder.id}/edit`} className="text-amber-700 hover:underline text-sm">編集</Link>
                     </td>
                   </tr>
                 ))}

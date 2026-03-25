@@ -23,7 +23,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
     const member = await memberDelegate.findUnique({
       where: { id },
       include: {
-        [relationName]: true,
+        [relationName]: {
+          include: {
+            familyRegister: { select: { id: true, name: true } },
+          },
+        },
       },
     });
 

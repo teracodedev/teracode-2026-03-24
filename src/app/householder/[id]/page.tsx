@@ -97,7 +97,7 @@ const emptyMemberForm = {
 };
 
 type MemberForm = typeof emptyMemberForm;
-type TabId = "info" | "detail" | "genzaicho" | "kakucho";
+type TabId = "info" | "detail";
 
 function MemberFormFields({ form, onChange }: { form: MemberForm; onChange: (f: MemberForm) => void }) {
   const set = (k: keyof MemberForm, v: string) => onChange({ ...form, [k]: v });
@@ -452,15 +452,9 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
   if (loading) return <div className="text-center py-12 text-stone-400">読み込み中...</div>;
   if (!householder) return <div className="text-center py-12 text-stone-400">戸主が見つかりません</div>;
 
-  const members = householder.members ?? [];
-  const livingMembers = members.filter((m) => !m.deathDate);
-  const deceasedMembers = members.filter((m) => !!m.deathDate);
-
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: "info", label: "基本情報" },
     { id: "detail", label: "戸主詳細" },
-    { id: "genzaicho", label: "現在帳", count: livingMembers.length },
-    { id: "kakucho", label: "過去帳", count: deceasedMembers.length },
   ];
 
   return (
@@ -589,182 +583,6 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
         </div>
       )}
 
-      {/* 現在帳タブ */}
-      {activeTab === "genzaicho" && (
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-stone-400">存命の世帯員</p>
-            <button
-              onClick={() => { setShowAddForm(!showAddForm); setAddError(""); setAddForm(emptyMemberForm); }}
-              className="text-sm text-stone-600 hover:text-stone-800 border border-stone-300 px-3 py-1 rounded-lg"
-            >
-              {showAddForm ? "キャンセル" : "+ 追加"}
-            </button>
-          </div>
-
-          {showAddForm && (
-            <form onSubmit={handleAddMember} className="border border-stone-200 rounded-lg p-4 mb-4 bg-stone-50">
-              <p className="text-sm font-medium text-stone-700">新規世帯員</p>
-              {addError && <p className="text-red-600 text-xs mt-1">{addError}</p>}
-              <MemberFormFields form={addForm} onChange={setAddForm} />
-              <div className="flex gap-2 mt-3">
-                <button type="submit" disabled={addSubmitting}
-                  className="bg-stone-700 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-stone-800 disabled:opacity-50">
-                  {addSubmitting ? "登録中..." : "登録する"}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {livingMembers.length === 0 && !showAddForm ? (
-            <p className="text-stone-400 text-sm">存命の世帯員が登録されていません</p>
-          ) : (
-            <div className="space-y-2">
-              {livingMembers.map((member) => {
-                const isEditing = editingMemberId === member.id;
-                const isExpanded = expandedDetailId === member.id;
-                const displayName = [member.familyName, member.givenName].filter(Boolean).join(" ");
-                return (
-                  <div key={member.id} className="border border-stone-200 rounded-lg overflow-hidden">
-                    {/* 行ヘッダー */}
-                    <div className="flex items-center gap-2 px-3 py-2.5 bg-white">
-                      <button
-                        onClick={() => setExpandedDetailId(isExpanded ? null : member.id)}
-                        className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 transition-colors font-medium"
-                      >
-                        {isExpanded ? "▲" : "詳細"}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-stone-800">{displayName}</span>
-                        {member.relation && (
-                          <span className="ml-2 text-sm text-stone-400">{member.relation}</span>
-                        )}
-                        {member.birthDate && (
-                          <span className="ml-2 text-sm text-stone-400">{formatDate(member.birthDate)}</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <button onClick={() => handleTransfer(member.id, displayName)}
-                          disabled={transferring}
-                          className="text-xs text-amber-600 hover:text-amber-800 border border-amber-200 px-2 py-1 rounded disabled:opacity-50">
-                          当主交代
-                        </button>
-                        <button onClick={() => { startEdit(member); setExpandedDetailId(null); }}
-                          className="text-xs text-stone-500 hover:text-stone-700 border border-stone-200 px-2 py-1 rounded">
-                          編集
-                        </button>
-                        <button onClick={() => handleDeleteMember(member.id, displayName)}
-                          className="text-xs text-red-400 hover:text-red-600 border border-red-100 px-2 py-1 rounded">
-                          削除
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* 詳細パネル */}
-                    {isExpanded && !isEditing && (
-                      <div className="bg-stone-50 border-t border-stone-200 px-4 py-4 space-y-4">
-
-                        {/* 世帯員情報 */}
-                        <div>
-                          <p className="text-xs font-semibold text-stone-400 uppercase mb-2">世帯員情報</p>
-                          <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-stone-700">
-                            {member.familyNameKana && (
-                              <div className="col-span-2">
-                                <dt className="inline text-stone-400">カナ: </dt>
-                                <dd className="inline">{member.familyNameKana} {member.givenNameKana || ""}</dd>
-                              </div>
-                            )}
-                            {member.relation && (
-                              <div><dt className="inline text-stone-400">続柄: </dt><dd className="inline">{member.relation}</dd></div>
-                            )}
-                            {member.birthDate && (
-                              <div><dt className="inline text-stone-400">生年月日: </dt><dd className="inline">{formatDate(member.birthDate)}</dd></div>
-                            )}
-                            {member.dharmaName && (
-                              <div><dt className="inline text-stone-400">法名: </dt><dd className="inline">{member.dharmaName}</dd></div>
-                            )}
-                            {member.dharmaNameKana && (
-                              <div><dt className="inline text-stone-400">法名（カナ）: </dt><dd className="inline">{member.dharmaNameKana}</dd></div>
-                            )}
-                            {member.note && (
-                              <div className="col-span-2"><dt className="inline text-stone-400">備考: </dt><dd className="inline">{member.note}</dd></div>
-                            )}
-                          </dl>
-                        </div>
-
-                        {/* 個人連絡先 */}
-                        <div className="border-t border-stone-200 pt-3">
-                          <p className="text-xs font-semibold text-stone-400 uppercase mb-2">連絡先</p>
-                          <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm text-stone-700">
-                            <div><dt className="inline text-stone-400">郵便番号: </dt><dd className="inline">{member.postalCode || "-"}</dd></div>
-                            <div className="col-span-2"><dt className="inline text-stone-400">住所1: </dt><dd className="inline">{member.address1 || "-"}</dd></div>
-                            {member.address2 && <div className="col-span-2"><dt className="inline text-stone-400">住所2: </dt><dd className="inline">{member.address2}</dd></div>}
-                            {member.address3 && <div className="col-span-2"><dt className="inline text-stone-400">住所3: </dt><dd className="inline">{member.address3}</dd></div>}
-                            <div><dt className="inline text-stone-400">電話番号1: </dt><dd className="inline">{member.phone1 || "-"}</dd></div>
-                            <div><dt className="inline text-stone-400">電話番号2: </dt><dd className="inline">{member.phone2 || "-"}</dd></div>
-                            <div><dt className="inline text-stone-400">FAX: </dt><dd className="inline">{member.fax || "-"}</dd></div>
-                            {member.domicile && <div className="col-span-2"><dt className="inline text-stone-400">本籍地: </dt><dd className="inline">{member.domicile}</dd></div>}
-                          </dl>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 編集フォーム */}
-                    {isEditing && (
-                      <div className="border-t border-stone-200 p-4 bg-stone-50">
-                        <form onSubmit={(e) => handleEditMember(e, member.id)}>
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-sm font-medium text-stone-700">編集中</p>
-                            <button type="button" onClick={() => setEditingMemberId(null)}
-                              className="text-xs text-stone-400 hover:text-stone-600">キャンセル</button>
-                          </div>
-                          {editError && <p className="text-red-600 text-xs mb-2">{editError}</p>}
-                          <MemberFormFields form={editForm} onChange={setEditForm} />
-                          <div className="flex gap-2 mt-3">
-                            <button type="submit" disabled={editSubmitting}
-                              className="bg-stone-700 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-stone-800 disabled:opacity-50">
-                              {editSubmitting ? "保存中..." : "保存する"}
-                            </button>
-                          </div>
-                        </form>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* 過去帳タブ */}
-      {activeTab === "kakucho" && (
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-          <p className="text-sm text-stone-400 mb-4">故人の世帯員</p>
-
-          {deceasedMembers.length === 0 ? (
-            <p className="text-stone-400 text-sm">故人の世帯員が登録されていません</p>
-          ) : (
-            <div className="space-y-3">
-              {deceasedMembers.map((member) => (
-                <MemberCard
-                  key={member.id}
-                  member={member}
-                  isEditing={editingMemberId === member.id}
-                  editForm={editForm}
-                  editError={editError}
-                  editSubmitting={editSubmitting}
-                  onStartEdit={() => startEdit(member)}
-                  onCancelEdit={() => setEditingMemberId(null)}
-                  onEditChange={setEditForm}
-                  onEditSubmit={(e) => handleEditMember(e, member.id)}
-                  onDelete={() => handleDeleteMember(member.id, [member.familyName, member.givenName].filter(Boolean).join(" "))}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }

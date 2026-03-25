@@ -31,6 +31,7 @@ interface MemberDetail {
     phone2: string | null;
     email: string | null;
     isActive: boolean;
+    familyRegister: { id: string; name: string } | null;
   };
 }
 
@@ -148,6 +149,21 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
         <h2 className="font-semibold text-stone-700 mb-4">所属戸主</h2>
         <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <div>
+            <dt className="text-stone-400 text-xs mb-0.5">家族・親族台帳</dt>
+            {member.householder.familyRegister ? (
+              <dd>
+                <Link
+                  href={"/family-register/" + member.householder.familyRegister.id}
+                  className="text-amber-700 hover:text-amber-800 hover:underline font-medium"
+                >
+                  {member.householder.familyRegister.name}
+                </Link>
+              </dd>
+            ) : (
+              <dd className="text-stone-400">未紐付け</dd>
+            )}
+          </div>
           <div>
             <dt className="text-stone-400 text-xs mb-0.5">戸主名</dt>
             <dd className="font-medium text-stone-700">

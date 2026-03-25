@@ -126,10 +126,10 @@ export default function GenzaichoPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <div className="font-medium text-stone-800 text-base">
-                        {record.familyName} {record.givenName || ""}
+                        {[record.familyName, record.givenName].filter(Boolean).join(" ")}
                       </div>
-                      {record.familyNameKana && (
-                        <div className="text-xs text-stone-400">{record.familyNameKana} {record.givenNameKana}</div>
+                      {(record.familyNameKana || record.givenNameKana) && (
+                        <div className="text-xs text-stone-400">{[record.familyNameKana, record.givenNameKana].filter(Boolean).join(" ")}</div>
                       )}
                       <div className="text-sm text-stone-500 mt-1 flex flex-wrap gap-x-2">
                         {record.relation && <span>{record.relation}</span>}
@@ -167,19 +167,25 @@ export default function GenzaichoPage() {
             <table className="w-full text-base">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">家族・親族台帳</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">フリガナ</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">氏名</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">続柄</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">生年月日</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">年齢</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">戸主</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">所属グループ</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">住所</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号1</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号2</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">詳細・編集</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {records.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((record) => (
                   <Fragment key={record.id}>
                     <tr className="hover:bg-stone-50">
+                      <td className="px-4 py-3 text-stone-600 text-sm">
+                        {[record.familyNameKana, record.givenNameKana].filter(Boolean).join(" ") || "-"}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-stone-800">
+                        {[record.familyName, record.givenName].filter(Boolean).join(" ")}
+                      </td>
                       <td className="px-4 py-3 text-stone-600">
                         {record.householder.familyRegister ? (
                           <Link
@@ -192,32 +198,19 @@ export default function GenzaichoPage() {
                           <span className="text-stone-300 text-sm">未設定</span>
                         )}
                       </td>
-                      <td className="px-4 py-3">
-                        <Link href={"/members/" + record.id} className="font-medium text-stone-800 hover:text-amber-700 hover:underline">
-                          {record.familyName} {record.givenName || ""}
-                        </Link>
-                        {record.familyNameKana && (
-                          <div className="text-xs text-stone-400">
-                            {record.familyNameKana} {record.givenNameKana}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-stone-600">{record.relation || "-"}</td>
-                      <td className="px-4 py-3 text-stone-600">{formatDate(record.birthDate)}</td>
-                      <td className="px-4 py-3 text-stone-600">{calcAge(record.birthDate)}</td>
-                      <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        <Link
-                          href={"/householder/" + record.householder.id}
-                          className="text-stone-500 hover:text-stone-400 hover:underline"
-                        >
-                          {record.householder.familyName} {record.householder.givenName}
-                          <span className="text-xs text-stone-400 ml-1">
-                            ({record.householder.householderCode})
-                          </span>
-                        </Link>
-                      </td>
                       <td className="px-4 py-3 text-stone-600 text-sm">
                         {[record.householder.address1, record.householder.address2, record.householder.address3].filter(Boolean).join(" ") || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-stone-600 text-sm">
+                        {record.householder.phone1 || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-stone-600 text-sm">
+                        {record.householder.phone2 || "-"}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Link href={"/members/" + record.id} className="text-amber-700 hover:text-amber-800 hover:underline">
+                          詳細・編集
+                        </Link>
                       </td>
                     </tr>
                   </Fragment>

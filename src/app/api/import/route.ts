@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/require-auth";
-import { parseYaml, yamlDateToDate } from "@/lib/yaml-utils";
+import { parseYaml, yamlDateToDate, toFullWidthKatakana } from "@/lib/yaml-utils";
 
 export const runtime = "nodejs";
 
@@ -34,13 +34,13 @@ export async function POST(req: NextRequest) {
           update: {
             familyName: p.姓,
             givenName: p.名 || "",
-            familyNameKana: p.姓フリガナ || null,
-            givenNameKana: p.名フリガナ || null,
+            familyNameKana: toFullWidthKatakana(p.姓フリガナ),
+            givenNameKana: toFullWidthKatakana(p.名フリガナ),
             gender: p.性別 !== "U" ? p.性別 : null,
             birthDate,
             deathDate,
             dharmaName: p["戒名・法名・法号"] || null,
-            dharmaNameKana: p["戒名・法名・法号フリガナ"] || null,
+            dharmaNameKana: toFullWidthKatakana(p["戒名・法名・法号フリガナ"]),
             note: p.備考 || null,
             domicile: p.本籍 || null,
             email: p.メールアドレス || null,
@@ -54,13 +54,13 @@ export async function POST(req: NextRequest) {
             id: p.個人UUID,
             familyName: p.姓,
             givenName: p.名 || "",
-            familyNameKana: p.姓フリガナ || null,
-            givenNameKana: p.名フリガナ || null,
+            familyNameKana: toFullWidthKatakana(p.姓フリガナ),
+            givenNameKana: toFullWidthKatakana(p.名フリガナ),
             gender: p.性別 !== "U" ? p.性別 : null,
             birthDate,
             deathDate,
             dharmaName: p["戒名・法名・法号"] || null,
-            dharmaNameKana: p["戒名・法名・法号フリガナ"] || null,
+            dharmaNameKana: toFullWidthKatakana(p["戒名・法名・法号フリガナ"]),
             note: p.備考 || null,
             domicile: p.本籍 || null,
             email: p.メールアドレス || null,
@@ -99,13 +99,13 @@ export async function POST(req: NextRequest) {
           update: {
             familyName: p.姓,
             givenName: p.名 || null,
-            familyNameKana: p.姓フリガナ || null,
-            givenNameKana: p.名フリガナ || null,
+            familyNameKana: toFullWidthKatakana(p.姓フリガナ),
+            givenNameKana: toFullWidthKatakana(p.名フリガナ),
             gender: p.性別 !== "U" ? p.性別 : null,
             birthDate,
             deathDate,
             dharmaName: p["戒名・法名・法号"] || null,
-            dharmaNameKana: p["戒名・法名・法号フリガナ"] || null,
+            dharmaNameKana: toFullWidthKatakana(p["戒名・法名・法号フリガナ"]),
             relation: p.続柄 || null,
             note: p.備考 || null,
             domicile: p.本籍 || null,
@@ -121,13 +121,13 @@ export async function POST(req: NextRequest) {
             householderId: p.戸主UUID,
             familyName: p.姓,
             givenName: p.名 || null,
-            familyNameKana: p.姓フリガナ || null,
-            givenNameKana: p.名フリガナ || null,
+            familyNameKana: toFullWidthKatakana(p.姓フリガナ),
+            givenNameKana: toFullWidthKatakana(p.名フリガナ),
             gender: p.性別 !== "U" ? p.性別 : null,
             birthDate,
             deathDate,
             dharmaName: p["戒名・法名・法号"] || null,
-            dharmaNameKana: p["戒名・法名・法号フリガナ"] || null,
+            dharmaNameKana: toFullWidthKatakana(p["戒名・法名・法号フリガナ"]),
             relation: p.続柄 || null,
             note: p.備考 || null,
             domicile: p.本籍 || null,

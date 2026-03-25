@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/require-auth";
+import { toFullWidthKatakana } from "@/lib/yaml-utils";
 import MDBReader from "mdb-reader";
 
 export const runtime = "nodejs";
@@ -101,14 +102,14 @@ export async function POST(req: NextRequest) {
     try {
       const daichodId = row["台帳ID"] as number;
       const [familyName, givenName] = splitName(row["氏名"]);
-      const [familyNameKana, givenNameKana] = splitName(row["ﾌﾘｶﾞﾅ"]);
+      const [familyNameKanaRaw, givenNameKanaRaw] = splitName(row["ﾌﾘｶﾞﾅ"]);
 
       const householder = await prisma.householder.create({
         data: {
           familyName: familyName || "（不明）",
           givenName: givenName ?? "",
-          familyNameKana: familyNameKana || null,
-          givenNameKana: givenNameKana || null,
+          familyNameKana: toFullWidthKatakana(familyNameKanaRaw),
+          givenNameKana: toFullWidthKatakana(givenNameKanaRaw),
           postalCode: str(row["〒"]),
           address1: str(row["住所1"]),
           address2: str(row["住所2"]),
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
           gender: toGender(row["性別"]),
           birthDate: toDate(row["生年月日"]),
           dharmaName: str(row["戒名"]),
-          dharmaNameKana: str(row["戒名ｶﾅ"]),
+          dharmaNameKana: toFullWidthKatakana(str(row["戒名ｶﾅ"])),
           note: str(row["備考"]),
           domicile: str(row["本籍"]),
           joinedAt: toDate(row["新規登録日"]),
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
       }
 
       const [familyName, givenName] = splitName(row["氏名"]);
-      const [familyNameKana, givenNameKana] = splitName(row["ﾌﾘｶﾞﾅ"]);
+      const [familyNameKanaRaw, givenNameKanaRaw] = splitName(row["ﾌﾘｶﾞﾅ"]);
 
       // UTB003_家族住所 から住所データを取得
       const familyId = row["家族ID"] as number;
@@ -165,13 +166,13 @@ export async function POST(req: NextRequest) {
           householderId,
           familyName: familyName || "（不明）",
           givenName: givenName || null,
-          familyNameKana: familyNameKana || null,
-          givenNameKana: givenNameKana || null,
+          familyNameKana: toFullWidthKatakana(familyNameKanaRaw),
+          givenNameKana: toFullWidthKatakana(givenNameKanaRaw),
           gender: toGender(row["性別"]),
           birthDate: toDate(row["生年月日"]),
           deathDate: toDate(row["命日"]),
           dharmaName: str(row["戒名"]),
-          dharmaNameKana: str(row["戒名ｶﾅ"]),
+          dharmaNameKana: toFullWidthKatakana(str(row["戒名ｶﾅ"])),
           relation: str(row["続柄"]),
           note: str(row["個人備考"]),
           domicile: str(row["本籍"]),

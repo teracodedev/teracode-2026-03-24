@@ -61,6 +61,13 @@ function formatDate(d: string | null) {
   return new Date(d).toLocaleDateString("ja-JP");
 }
 
+function formatGender(g: string | null) {
+  if (g === "M") return "男性";
+  if (g === "F") return "女性";
+  if (g) return "その他";
+  return "不明";
+}
+
 type TabId = "householders" | "genzaicho" | "kakucho";
 
 export default function FamilyRegisterDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -161,7 +168,9 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
     (h.members ?? []).map((m) => ({ ...m, householderName: `${h.familyName}${h.givenName}`, householderId: h.id }))
   );
   const livingMembers = allMembers.filter((m) => !m.deathDate);
-  const deceasedMembers = allMembers.filter((m) => !!m.deathDate);
+  const deceasedMembers = allMembers
+    .filter((m) => !!m.deathDate)
+    .sort((a, b) => new Date(b.deathDate!).getTime() - new Date(a.deathDate!).getTime());
 
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: "householders", label: "戸主" },
@@ -260,12 +269,10 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
 
                 {/* 基本情報 */}
                 <dl className="divide-y divide-stone-50">
-                  {h.gender && (
-                    <div className="flex px-4 py-2.5">
-                      <dt className="w-28 shrink-0 text-sm text-stone-400">性別</dt>
-                      <dd className="text-sm text-stone-800">{h.gender}</dd>
-                    </div>
-                  )}
+                  <div className="flex px-4 py-2.5">
+                    <dt className="w-28 shrink-0 text-sm text-stone-400">性別</dt>
+                    <dd className="text-sm text-stone-800">{formatGender(h.gender)}</dd>
+                  </div>
                   {h.birthDate && (
                     <div className="flex px-4 py-2.5">
                       <dt className="w-28 shrink-0 text-sm text-stone-400">生年月日</dt>

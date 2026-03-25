@@ -102,45 +102,28 @@ export default function FamilyRegisterPage() {
           <div className="md:hidden space-y-2">
             {list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((r) => {
               const hh = r.householders[0];
-              const memberCount = r.householders.reduce((s, h) => s + (h._count?.members ?? 0), 0);
+              const nameKana = hh ? `${hh.familyNameKana ?? ""}${hh.givenNameKana ? " " + hh.givenNameKana : ""}` : "";
               return (
-                <Link
+                <div
                   key={r.id}
-                  href={`/family-register/${r.id}`}
-                  className="block bg-white rounded-xl border border-stone-200 px-4 py-3 shadow-sm active:bg-stone-50"
+                  className="bg-white rounded-xl border border-stone-200 px-4 py-3 shadow-sm"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      {nameKana && <div className="text-xs text-stone-400">{nameKana}</div>}
                       <div className="font-medium text-stone-800 text-base">{r.name}</div>
-                      {hh && (
-                        <>
-                          <div className="text-sm text-stone-600 mt-0.5">
-                            戸主: {hh.familyName} {hh.givenName}
-                            {hh.familyNameKana && (
-                              <span className="ml-1 text-xs text-stone-400">
-                                ({hh.familyNameKana} {hh.givenNameKana})
-                              </span>
-                            )}
-                          </div>
-                          {hh.address1 && (
-                            <div className="text-xs text-stone-500 mt-0.5">{hh.address1}</div>
-                          )}
-                        </>
-                      )}
-                      {r.note && <div className="text-xs text-stone-400 mt-1">{r.note}</div>}
+                      <div className="text-sm text-stone-600 mt-0.5">
+                        {hh ? `${hh.familyName} ${hh.givenName}` : <span className="text-stone-300">未設定</span>}
+                      </div>
                     </div>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                      {hh && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          hh.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"
-                        }`}>
-                          {hh.isActive ? "在籍" : "離檀"}
-                        </span>
-                      )}
-                      <span className="text-xs text-stone-400">{memberCount}世帯員</span>
-                    </div>
+                    <Link
+                      href={`/family-register/${r.id}`}
+                      className="shrink-0 px-3 py-1.5 bg-stone-100 text-stone-700 rounded-lg text-sm hover:bg-stone-200 transition-colors"
+                    >
+                      編集
+                    </Link>
                   </div>
-                </Link>
+                </div>
               );
             })}
             <div className="text-xs text-stone-400 px-1 pt-1">{list.length}件中 {Math.min((currentPage - 1) * PAGE_SIZE + 1, list.length)}〜{Math.min(currentPage * PAGE_SIZE, list.length)}件表示</div>
@@ -151,20 +134,21 @@ export default function FamilyRegisterPage() {
             <table className="w-full text-base">
               <thead className="bg-stone-50 border-b border-stone-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">台帳名</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">家族名フリガナ</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">家族名</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">戸主</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">住所</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">世帯員数</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">状態</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium">編集</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
                 {list.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((r) => {
                   const hh = r.householders[0];
-                  const memberCount = r.householders.reduce((s, h) => s + (h._count?.members ?? 0), 0);
+                  const nameKana = hh
+                    ? `${hh.familyNameKana ?? ""}${hh.givenNameKana ? " " + hh.givenNameKana : ""}`
+                    : "";
                   return (
                     <tr key={r.id} className="hover:bg-stone-50">
+                      <td className="px-4 py-3 text-stone-700">{nameKana}</td>
                       <td className="px-4 py-3">
                         <Link
                           href={`/family-register/${r.id}`}
@@ -172,41 +156,17 @@ export default function FamilyRegisterPage() {
                         >
                           {r.name}
                         </Link>
-                        {r.note && <div className="text-xs text-stone-400">{r.note}</div>}
                       </td>
                       <td className="px-4 py-3 text-stone-700">
-                        {hh ? (
-                          <>
-                            <Link href={`/householder/${hh.id}`} className="hover:text-amber-700 hover:underline">
-                              {hh.familyName} {hh.givenName}
-                            </Link>
-                            {hh.familyNameKana && (
-                              <div className="text-xs text-stone-400">
-                                {hh.familyNameKana} {hh.givenNameKana}
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-stone-300 text-sm">未設定</span>
-                        )}
+                        {hh ? `${hh.familyName} ${hh.givenName}` : <span className="text-stone-300 text-sm">未設定</span>}
                       </td>
-                      <td className="px-4 py-3 text-stone-600">
-                        {hh?.address1 || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-stone-600">
-                        {hh?.phone1 || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-stone-600">{memberCount}名</td>
                       <td className="px-4 py-3">
-                        {hh ? (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            hh.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"
-                          }`}>
-                            {hh.isActive ? "在籍" : "離檀"}
-                          </span>
-                        ) : (
-                          <span className="text-stone-300 text-xs">-</span>
-                        )}
+                        <Link
+                          href={`/family-register/${r.id}`}
+                          className="px-3 py-1.5 bg-stone-100 text-stone-700 rounded-lg text-sm hover:bg-stone-200 transition-colors"
+                        >
+                          編集
+                        </Link>
                       </td>
                     </tr>
                   );
