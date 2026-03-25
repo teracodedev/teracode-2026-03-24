@@ -70,6 +70,25 @@ type ContactForm = {
   note: string;
 };
 
+interface HouseholderEditForm {
+  familyName: string;
+  givenName: string;
+  familyNameKana: string;
+  givenNameKana: string;
+  postalCode: string;
+  address1: string;
+  address2: string;
+  address3: string;
+  phone1: string;
+  phone2: string;
+  email: string;
+  domicile: string;
+  note: string;
+  joinedAt: string;
+  leftAt: string;
+  isActive: boolean;
+}
+
 const CEREMONY_TYPE_LABELS: Record<string, string> = {
   MEMORIAL: "法要",
   REGULAR: "定例行事",
@@ -277,6 +296,15 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
   });
   const [contactSubmitting, setContactSubmitting] = useState(false);
   const [contactError, setContactError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [householderEditForm, setHouseholderEditForm] = useState<HouseholderEditForm>({
+    familyName: "", givenName: "", familyNameKana: "", givenNameKana: "",
+    postalCode: "", address1: "", address2: "", address3: "",
+    phone1: "", phone2: "", email: "", domicile: "", note: "",
+    joinedAt: "", leftAt: "", isActive: true,
+  });
+  const [householderEditSubmitting, setHouseholderEditSubmitting] = useState(false);
+  const [householderEditError, setHouseholderEditError] = useState("");
 
   const fetchHouseholder = () => {
     fetch(`/api/householder/${id}`)
@@ -421,6 +449,48 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
     setContactError("");
   };
 
+  const startEditHouseholder = () => {
+    if (!householder) return;
+    setHouseholderEditForm({
+      familyName: householder.familyName,
+      givenName: householder.givenName,
+      familyNameKana: householder.familyNameKana || "",
+      givenNameKana: householder.givenNameKana || "",
+      postalCode: householder.postalCode || "",
+      address1: householder.address1 || "",
+      address2: householder.address2 || "",
+      address3: householder.address3 || "",
+      phone1: householder.phone1 || "",
+      phone2: householder.phone2 || "",
+      email: householder.email || "",
+      domicile: householder.domicile || "",
+      note: householder.note || "",
+      joinedAt: toInputDate(householder.joinedAt),
+      leftAt: toInputDate(householder.leftAt),
+      isActive: householder.isActive,
+    });
+    setIsEditing(true);
+    setHouseholderEditError("");
+  };
+
+  const handleSaveHouseholder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setHouseholderEditSubmitting(true);
+    setHouseholderEditError("");
+    try {
+      const res = await fetchWithAuth(`/api/householder/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(householderEditForm),
+      });
+      const data = await res.json();
+      if (!res.ok) { setHouseholderEditError(data.error || "更新に失敗しました"); return; }
+      setIsEditing(false);
+      fetchHouseholder();
+    } catch { setHouseholderEditError("ネットワークエラーが発生しました"); }
+    finally { setHouseholderEditSubmitting(false); }
+  };
+
   const handleSaveContact = async (e: React.FormEvent) => {
     e.preventDefault();
     setContactSubmitting(true);
@@ -473,15 +543,136 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
           className="border border-stone-300 text-stone-600 px-4 py-1.5 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium">
           ⬇ エクスポート
         </a>
-        <Link href={`/householder/${id}/edit`}
+        <button onClick={startEditHouseholder}
           className="border border-stone-300 text-stone-600 px-4 py-1.5 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium">
           編集
-        </Link>
+        </button>
         <button onClick={handleDelete} disabled={deleting}
           className="border border-red-200 text-red-600 px-4 py-1.5 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium disabled:opacity-50">
           {deleting ? "削除中..." : "削除"}
         </button>
       </div>
+
+      {/* インライン編集フォーム */}
+      {isEditing && (
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold text-stone-700">戸主情報編集</h2>
+            <button type="button" onClick={() => setIsEditing(false)}
+              className="text-sm text-stone-400 hover:text-stone-600">キャンセル</button>
+          </div>
+          {householderEditError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{householderEditError}</div>
+          )}
+          <form onSubmit={handleSaveHouseholder} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">姓 <span className="text-red-500">*</span></label>
+                <input type="text" value={householderEditForm.familyName} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, familyName: e.target.value })} required
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">名 <span className="text-red-500">*</span></label>
+                <input type="text" value={householderEditForm.givenName} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, givenName: e.target.value })} required
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">姓（カナ）</label>
+                <input type="text" value={householderEditForm.familyNameKana} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, familyNameKana: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">名（カナ）</label>
+                <input type="text" value={householderEditForm.givenNameKana} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, givenNameKana: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">郵便番号</label>
+                <input type="text" value={householderEditForm.postalCode} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, postalCode: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-stone-600 mb-1">住所1（都道府県・市区町村）</label>
+                <input type="text" value={householderEditForm.address1} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, address1: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">住所2（丁目・番地）</label>
+                <input type="text" value={householderEditForm.address2} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, address2: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">住所3（建物名・部屋番号）</label>
+                <input type="text" value={householderEditForm.address3} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, address3: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">電話番号1</label>
+                <input type="tel" value={householderEditForm.phone1} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, phone1: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">電話番号2</label>
+                <input type="tel" value={householderEditForm.phone2} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, phone2: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">メールアドレス</label>
+                <input type="email" value={householderEditForm.email} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, email: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">本籍地</label>
+                <input type="text" value={householderEditForm.domicile} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, domicile: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">入檀日</label>
+                <input type="date" value={householderEditForm.joinedAt} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, joinedAt: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-stone-600 mb-1">離檀日</label>
+                <input type="date" value={householderEditForm.leftAt} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, leftAt: e.target.value })}
+                  className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+              </div>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+                <input type="checkbox" checked={householderEditForm.isActive} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, isActive: e.target.checked })} className="rounded" />
+                在籍中
+              </label>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-600 mb-1">備考</label>
+              <textarea value={householderEditForm.note} onChange={(e) => setHouseholderEditForm({ ...householderEditForm, note: e.target.value })} rows={3}
+                className="w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400" />
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" disabled={householderEditSubmitting}
+                className="bg-stone-700 text-white px-6 py-2 rounded-lg hover:bg-stone-800 transition-colors text-base font-medium disabled:opacity-50">
+                {householderEditSubmitting ? "更新中..." : "更新する"}
+              </button>
+              <button type="button" onClick={() => setIsEditing(false)}
+                className="border border-stone-300 text-stone-600 px-6 py-2 rounded-lg hover:bg-stone-50 transition-colors text-base font-medium">
+                キャンセル
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* タブ */}
       <div className="border-b border-stone-200 overflow-x-auto">
@@ -515,40 +706,57 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
 
       {/* 基本情報タブ */}
       {activeTab === "info" && (
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-          <dl className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-            <div><dt className="text-stone-400">UUID</dt><dd className="font-mono text-stone-700 text-xs break-all">{householder.householderCode}</dd></div>
-            <div>
-              <dt className="text-stone-400">氏名（カナ）</dt>
-              <dd className="text-stone-700">
-                {[householder.familyNameKana, householder.givenNameKana].filter(Boolean).join(" ") || "-"}
-              </dd>
-            </div>
-            <div><dt className="text-stone-400">郵便番号</dt><dd className="text-stone-700">{householder.postalCode || "-"}</dd></div>
-            <div className="col-span-2">
-              <dt className="text-stone-400">住所</dt>
-              <dd className="text-stone-700">
-                {[householder.address1, householder.address2, householder.address3].filter(Boolean).join(" ") || "-"}
-              </dd>
-            </div>
-            <div><dt className="text-stone-400">電話番号1</dt><dd className="text-stone-700">{householder.phone1 || "-"}</dd></div>
-            <div><dt className="text-stone-400">電話番号2</dt><dd className="text-stone-700">{householder.phone2 || "-"}</dd></div>
-            <div><dt className="text-stone-400">メールアドレス</dt><dd className="text-stone-700">{householder.email || "-"}</dd></div>
-            <div><dt className="text-stone-400">入檀日</dt><dd className="text-stone-700">{formatDate(householder.joinedAt)}</dd></div>
-            {householder.leftAt && (
-              <div><dt className="text-stone-400">離檀日</dt><dd className="text-stone-700">{formatDate(householder.leftAt)}</dd></div>
-            )}
-            {householder.note && (
-              <div className="col-span-2">
-                <dt className="text-stone-400">備考</dt>
-                <dd className="text-stone-700 whitespace-pre-wrap">{householder.note}</dd>
-              </div>
-            )}
-          </dl>
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-stone-50 border-b border-stone-200">
+                <th className="text-left px-4 py-2 font-medium text-stone-600 w-2/5">項目</th>
+                <th className="text-left px-4 py-2 font-medium text-stone-600">内容</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">氏名フリガナ</td>
+                <td className="px-4 py-2.5 text-stone-700">{[householder.familyNameKana, householder.givenNameKana].filter(Boolean).join(" ")}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">氏名</td>
+                <td className="px-4 py-2.5 text-stone-700">{householder.familyName} {householder.givenName}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">郵便番号</td>
+                <td className="px-4 py-2.5 text-stone-700">{householder.postalCode ? `〒${householder.postalCode}` : ""}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">住所</td>
+                <td className="px-4 py-2.5 text-stone-700">{[householder.address1, householder.address2, householder.address3].filter(Boolean).join("")}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">電話番号1</td>
+                <td className="px-4 py-2.5 text-stone-700">{householder.phone1 || ""}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">電話番号2</td>
+                <td className="px-4 py-2.5 text-stone-700">{householder.phone2 || ""}</td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">移動時間(単位：分)</td>
+                <td className="px-4 py-2.5 text-stone-700"></td>
+              </tr>
+              <tr className="border-b border-stone-100">
+                <td className="px-4 py-2.5 text-stone-500">駐車場</td>
+                <td className="px-4 py-2.5 text-stone-700"></td>
+              </tr>
+              <tr>
+                <td className="px-4 py-2.5 text-stone-500">本籍地</td>
+                <td className="px-4 py-2.5 text-stone-700">{householder.domicile || ""}</td>
+              </tr>
+            </tbody>
+          </table>
 
           {/* 参加法要履歴 */}
           {(householder.ceremonies ?? []).filter((row) => row?.ceremony?.id).length > 0 && (
-            <div className="mt-6 pt-6 border-t border-stone-100">
+            <div className="mt-0 pt-4 pb-4 px-4 border-t border-stone-200">
               <h3 className="font-medium text-stone-600 mb-3 text-sm">参加法要履歴</h3>
               <div className="space-y-2">
                 {(householder.ceremonies ?? [])

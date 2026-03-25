@@ -35,24 +35,169 @@ interface MemberDetail {
   };
 }
 
+// 数字を漢数字に変換
+function toKanji(n: number): string {
+  if (n === 0) return "〇";
+  const digits = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+  const units = ["", "十", "百", "千"];
+  let result = "";
+  const str = String(n);
+  const len = str.length;
+  for (let i = 0; i < len; i++) {
+    const d = parseInt(str[i]);
+    const unit = units[len - 1 - i];
+    if (d === 0) continue;
+    if (d === 1 && unit !== "") {
+      result += unit;
+    } else {
+      result += digits[d] + unit;
+    }
+  }
+  return result;
+}
+
+// 和暦に変換
+function toWareki(dateStr: string | null): string {
+  if (!dateStr) return "-";
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+
+  let eraName: string;
+  let eraYear: number;
+
+  if (y > 2019 || (y === 2019 && m >= 5)) {
+    eraName = "令和";
+    eraYear = y - 2018;
+  } else if (y > 1989 || (y === 1989 && m > 1) || (y === 1989 && m === 1 && day >= 8)) {
+    eraName = "平成";
+    eraYear = y - 1988;
+  } else if (y > 1926 || (y === 1926 && m === 12 && day >= 25)) {
+    eraName = "昭和";
+    eraYear = y - 1925;
+  } else if (y > 1912 || (y === 1912 && m >= 8)) {
+    eraName = "大正";
+    eraYear = y - 1911;
+  } else {
+    eraName = "明治";
+    eraYear = y - 1867;
+  }
+
+  return `${eraName}${toKanji(eraYear)}年${toKanji(m)}月${toKanji(day)}日`;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "-";
   const d = new Date(dateStr);
-  return d.getFullYear() + "年" + (d.getMonth() + 1) + "月" + d.getDate() + "日";
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
-function calcAge(birthDateStr: string | null): string {
-  if (!birthDateStr) return "-";
+function formatDateWestern(dateStr: string): string {
+  return formatDate(dateStr);
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
+
+function addYears(dateStr: string, years: number): string {
+  const d = new Date(dateStr);
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString();
+}
+
+function calcAgeAtDeath(birthDateStr: string | null, deathDateStr: string | null): string {
+  if (!birthDateStr || !deathDateStr) return "-";
   const birth = new Date(birthDateStr);
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age + "歳";
+  const death = new Date(deathDateStr);
+  let age = death.getFullYear() - birth.getFullYear();
+  const m = death.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && death.getDate() < birth.getDate())) age--;
+  return age + "才";
 }
 
-function joinAddress(h: { address1: string | null; address2: string | null; address3: string | null }): string {
-  return [h.address1, h.address2, h.address3].filter(Boolean).join(" ") || "-";
+// 年回表データ
+function getNenkai(deathDate: string): { label: string; years: number }[] {
+  return [
+    { label: "一周忌", years: 1 },
+    { label: "三回忌", years: 2 },
+    { label: "七回忌", years: 6 },
+    { label: "十三回忌", years: 12 },
+    { label: "十七回忌", years: 16 },
+    { label: "二十五回忌", years: 24 },
+    { label: "三十三回忌", years: 32 },
+    { label: "五十回忌", years: 49 },
+  ];
+}
+
+// 中陰表データ（命日を1日目として数える）
+function getChuIn(): { label: string; days: number }[] {
+  return [
+    { label: "初七日忌", days: 6 },
+    { label: "二七日忌", days: 13 },
+    { label: "三七日忌", days: 20 },
+    { label: "四七日忌", days: 27 },
+    { label: "五七日忌", days: 34 },
+    { label: "六七日忌", days: 41 },
+    { label: "四十九日（七七日忌）", days: 48 },
+  ];
+}
+
+// 直近の仏事を計算
+function getNextCeremony(deathDate: string): { label: string; date: string } | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 中陰チェック
+  for (const ci of getChuIn()) {
+    const d = new Date(addDays(deathDate, ci.days));
+    d.setHours(0, 0, 0, 0);
+    if (d >= today) {
+      return { label: ci.label, date: addDays(deathDate, ci.days) };
+    }
+  }
+
+  // 年回チェック
+  for (const nk of getNenkai(deathDate)) {
+    const d = new Date(addYears(deathDate, nk.years));
+    d.setHours(0, 0, 0, 0);
+    if (d >= today) {
+      return { label: nk.label, date: addYears(deathDate, nk.years) };
+    }
+  }
+
+  return null;
+}
+
+function handleYamlExport(member: MemberDetail) {
+  const data = {
+    個人: {
+      個人UUID: member.id,
+      姓: member.familyName,
+      名: member.givenName || null,
+      姓フリガナ: member.familyNameKana || null,
+      名フリガナ: member.givenNameKana || null,
+      命日: member.deathDate ? new Date(member.deathDate).toISOString().split("T")[0] : null,
+      法名: member.dharmaName || null,
+      法名フリガナ: member.dharmaNameKana || null,
+      続柄: member.relation || null,
+      戸主名: `${member.householder.familyName}${member.householder.givenName}`,
+      戸主UUID: member.householder.id,
+      備考: member.note || null,
+    },
+  };
+  const lines = Object.entries(data.個人).map(([k, v]) => `  ${k}: ${v === null ? "null" : JSON.stringify(v)}`);
+  const yaml = `個人:\n${lines.join("\n")}\n`;
+  const blob = new Blob([yaml], { type: "text/yaml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${member.familyName}${member.givenName || ""}.yaml`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -78,135 +223,212 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
   const isDeceased = !!member.deathDate;
   const fullName = member.familyName + (member.givenName ? " " + member.givenName : "");
-  const fullNameKana = member.familyNameKana
-    ? member.familyNameKana + (member.givenNameKana ? " " + member.givenNameKana : "")
-    : null;
+  const fullNameKana = [member.familyNameKana, member.givenNameKana].filter(Boolean).join(" ") || null;
+
+  if (!isDeceased) {
+    // 生存者は簡易表示
+    return (
+      <div className="max-w-2xl space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href="/genzaicho" className="text-stone-400 hover:text-stone-600 text-sm">← 現在帳一覧へ</Link>
+          <h1 className="text-2xl font-bold text-stone-800">{fullName}</h1>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
+          <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+            <div><dt className="text-stone-400 text-xs mb-0.5">氏名</dt><dd className="font-medium text-stone-800">{fullName}</dd></div>
+            {member.relation && <div><dt className="text-stone-400 text-xs mb-0.5">続柄</dt><dd className="text-stone-700">{member.relation}</dd></div>}
+          </dl>
+        </div>
+      </div>
+    );
+  }
+
+  const nenkai = getNenkai(member.deathDate!);
+  const chuIn = getChuIn();
+  const nextCeremony = getNextCeremony(member.deathDate!);
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-center gap-4">
-        <Link href={isDeceased ? "/kakucho" : "/genzaicho"} className="text-stone-400 hover:text-stone-600 text-sm">
-          {isDeceased ? "← 過去帳一覧へ" : "← 現在帳一覧へ"}
+    <div className="max-w-3xl space-y-5">
+      {/* 上部ボタン */}
+      <div className="flex gap-2 flex-wrap">
+        {member.householder.familyRegister ? (
+          <Link
+            href={`/family-register/${member.householder.familyRegister.id}`}
+            className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
+          >
+            所属する家族台帳に戻る
+          </Link>
+        ) : (
+          <Link
+            href={`/householder/${member.householder.id}`}
+            className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
+          >
+            所属する戸主台帳に戻る
+          </Link>
+        )}
+        <Link
+          href="/kakucho"
+          className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
+        >
+          過去帳（物故者リスト）と戻る
         </Link>
-        <h1 className="text-2xl font-bold text-stone-800">{fullName}</h1>
-        {isDeceased && (
-          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">故人</span>
+      </div>
+
+      {/* タイトル */}
+      <h1 className="text-2xl font-bold text-stone-800">過去帳: {fullName}</h1>
+
+      {/* 直近の仏事 */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
+        <h2 className="font-semibold text-stone-700 mb-3 text-sm">直近の仏事</h2>
+        {nextCeremony ? (
+          <div className="text-sm text-red-600 space-y-1">
+            <p>
+              {fullName}の<span className="font-medium">{nextCeremony.label}</span>：
+              {formatDateWestern(nextCeremony.date)}（{toWareki(nextCeremony.date)}）
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-stone-400">直近の仏事はありません</p>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-        <h2 className="font-semibold text-stone-700 mb-4">個人情報</h2>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-          <div>
-            <dt className="text-stone-400 text-xs mb-0.5">氏名</dt>
-            <dd className="font-medium text-stone-800">{fullName}</dd>
-            {fullNameKana && <dd className="text-stone-500 text-xs mt-0.5">{fullNameKana}</dd>}
-          </div>
-          {member.relation && (
-            <div>
-              <dt className="text-stone-400 text-xs mb-0.5">続柄</dt>
-              <dd className="text-stone-700">{member.relation}</dd>
-            </div>
-          )}
-          <div>
-            <dt className="text-stone-400 text-xs mb-0.5">生年月日</dt>
-            <dd className="text-stone-700">{formatDate(member.birthDate)}</dd>
-          </div>
-          {!isDeceased && member.birthDate && (
-            <div>
-              <dt className="text-stone-400 text-xs mb-0.5">年齢</dt>
-              <dd className="text-stone-700">{calcAge(member.birthDate)}</dd>
-            </div>
-          )}
-          {isDeceased && (
-            <>
-              <div>
-                <dt className="text-stone-400 text-xs mb-0.5">命日</dt>
-                <dd className="text-stone-700">{formatDate(member.deathDate)}</dd>
-              </div>
-              {member.dharmaName && (
-                <div>
-                  <dt className="text-stone-400 text-xs mb-0.5">法名</dt>
-                  <dd className="font-medium text-stone-700">
-                    {member.dharmaName}
-                    {member.dharmaNameKana && (
-                      <span className="text-xs text-stone-400 ml-1 font-normal">({member.dharmaNameKana})</span>
-                    )}
-                  </dd>
-                </div>
-              )}
-            </>
-          )}
-          {member.note && (
-            <div className="col-span-2">
-              <dt className="text-stone-400 text-xs mb-0.5">備考</dt>
-              <dd className="text-stone-700 whitespace-pre-wrap">{member.note}</dd>
-            </div>
-          )}
-        </dl>
+      {/* ダウンロード */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
+        <h2 className="font-semibold text-stone-700 mb-3 text-sm">ダウンロード</h2>
+        <div className="flex flex-wrap gap-2">
+          {["年回案内(外)", "戸主宛名", "年回法名", "葬儀法名", "中報告・年回表", "納骨番号"].map((label) => (
+            <button
+              key={label}
+              className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
+              disabled
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6">
-        <h2 className="font-semibold text-stone-700 mb-4">所属戸主</h2>
-        <dl className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-          <div>
-            <dt className="text-stone-400 text-xs mb-0.5">家族・親族台帳</dt>
-            {member.householder.familyRegister ? (
-              <dd>
-                <Link
-                  href={"/family-register/" + member.householder.familyRegister.id}
-                  className="text-amber-700 hover:text-amber-800 hover:underline font-medium"
-                >
-                  {member.householder.familyRegister.name}
-                </Link>
-              </dd>
-            ) : (
-              <dd className="text-stone-400">未紐付け</dd>
-            )}
-          </div>
-          <div>
-            <dt className="text-stone-400 text-xs mb-0.5">戸主名</dt>
-            <dd className="font-medium text-stone-700">
-              {member.householder.familyName} {member.householder.givenName}
-            </dd>
-            {member.householder.familyNameKana && (
-              <dd className="text-stone-500 text-xs">
-                {member.householder.familyNameKana} {member.householder.givenNameKana || ""}
-              </dd>
-            )}
-          </div>
-          <div>
-            <dt className="text-stone-400 text-xs mb-0.5">戸主番号</dt>
-            <dd className="font-mono text-stone-700">{member.householder.householderCode}</dd>
-          </div>
-          <div className="col-span-2">
-            <dt className="text-stone-400 text-xs mb-0.5">住所</dt>
-            <dd className="text-stone-700">{joinAddress(member.householder)}</dd>
-          </div>
-          {member.householder.phone1 && (
-            <div>
-              <dt className="text-stone-400 text-xs mb-0.5">電話番号</dt>
-              <dd className="text-stone-700">
-                {member.householder.phone1}
-                {member.householder.phone2 ? " / " + member.householder.phone2 : ""}
-              </dd>
-            </div>
-          )}
-          {member.householder.email && (
-            <div>
-              <dt className="text-stone-400 text-xs mb-0.5">メールアドレス</dt>
-              <dd className="text-stone-700">{member.householder.email}</dd>
-            </div>
-          )}
-        </dl>
-        <div className="mt-4">
+      {/* 基本情報 */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between">
+          <h2 className="font-semibold text-stone-700 text-sm">基本情報</h2>
           <Link
-            href={"/householder/" + member.householder.id}
-            className="text-sm text-stone-600 hover:text-stone-800 border border-stone-300 px-3 py-1.5 rounded-lg inline-block"
+            href={`/householder/${member.householder.id}`}
+            className="text-xs px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
           >
-            戸主詳細を見る →
+            編集
           </Link>
         </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 border-b border-stone-200">
+              <tr>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">氏名</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">フリガナ</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">法名</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">法名フリガナ</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">命日（西暦）</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">命日（和暦）</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">享年</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">続柄</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="px-3 py-2 font-medium text-stone-800">{fullName}</td>
+                <td className="px-3 py-2 text-stone-600">{fullNameKana || "-"}</td>
+                <td className="px-3 py-2 text-stone-600">{member.dharmaName || "-"}</td>
+                <td className="px-3 py-2 text-stone-600">{member.dharmaNameKana || "-"}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">
+                  <span className="text-amber-700 hover:underline cursor-default">{formatDate(member.deathDate)}</span>
+                </td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">
+                  <span className="text-amber-700 hover:underline cursor-default">{toWareki(member.deathDate)}</span>
+                </td>
+                <td className="px-3 py-2 text-stone-600">{calcAgeAtDeath(member.birthDate, member.deathDate)}</td>
+                <td className="px-3 py-2 text-stone-600">{member.relation || "-"}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 年回表 */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-stone-200">
+          <h2 className="font-semibold text-stone-700 text-sm">年回表</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 border-b border-stone-200">
+              <tr>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">年回</th>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">年月日（西暦）</th>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">年月日（和暦）</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {nenkai.map(({ label, years }) => {
+                const dateStr = addYears(member.deathDate!, years);
+                return (
+                  <tr key={label} className="hover:bg-stone-50">
+                    <td className="px-4 py-2 text-stone-700">{label}</td>
+                    <td className="px-4 py-2">
+                      <span className="text-amber-700 hover:underline cursor-default">{formatDateWestern(dateStr)}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="text-amber-700 hover:underline cursor-default">{toWareki(dateStr)}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* 中陰表 */}
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
+        <div className="px-4 py-3 border-b border-stone-200">
+          <h2 className="font-semibold text-stone-700 text-sm">中陰表</h2>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-stone-50 border-b border-stone-200">
+              <tr>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">中陰</th>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">年月日（西暦）</th>
+                <th className="text-left px-4 py-2 text-stone-500 font-medium text-xs">年月日（和暦）</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-stone-100">
+              {chuIn.map(({ label, days }) => {
+                const dateStr = addDays(member.deathDate!, days);
+                return (
+                  <tr key={label} className="hover:bg-stone-50">
+                    <td className="px-4 py-2 text-stone-700">{label}</td>
+                    <td className="px-4 py-2">
+                      <span className="text-amber-700 hover:underline cursor-default">{formatDateWestern(dateStr)}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className="text-amber-700 hover:underline cursor-default">{toWareki(dateStr)}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* YAMLエクスポート */}
+      <div className="pb-4">
+        <button
+          onClick={() => handleYamlExport(member)}
+          className="text-sm px-4 py-2 border border-stone-300 text-stone-600 hover:bg-stone-50 rounded-lg"
+        >
+          YAMLファイルのエクスポート
+        </button>
       </div>
     </div>
   );

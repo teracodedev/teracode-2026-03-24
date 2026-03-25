@@ -210,7 +210,7 @@ export default function HouseholderPage() {
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">住所</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号1</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">電話番号2</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">詳細・編集</th>
+                  <th className="text-left px-4 py-3 text-stone-600 font-medium whitespace-nowrap">詳細・編集</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -241,10 +241,10 @@ export default function HouseholderPage() {
                     </td>
                     <td className="px-4 py-3 text-stone-600">{householder.phone1 || ""}</td>
                     <td className="px-4 py-3 text-stone-600">{householder.phone2 || ""}</td>
-                    <td className="px-4 py-3">
-                      <Link href={`/householder/${householder.id}`} className="text-amber-700 hover:underline text-sm">詳細</Link>
-                      <span className="text-stone-300 mx-1">・</span>
-                      <Link href={`/householder/${householder.id}/edit`} className="text-amber-700 hover:underline text-sm">編集</Link>
+                    <td className="px-4 py-3 text-sm whitespace-nowrap">
+                      <Link href={`/householder/${householder.id}`} className="text-amber-700 hover:text-amber-800 hover:underline">
+                        詳細・編集
+                      </Link>
                     </td>
                   </tr>
                 ))}

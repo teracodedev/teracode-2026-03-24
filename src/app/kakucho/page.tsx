@@ -171,8 +171,6 @@ export default function KakuchoPage() {
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">命日</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">享年</th>
                   <th className="text-left px-4 py-3 text-stone-600 font-medium">続柄</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">所属グループ</th>
-                  <th className="text-left px-4 py-3 text-stone-600 font-medium">詳細・編集</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100">
@@ -191,23 +189,6 @@ export default function KakuchoPage() {
                       <td className="px-4 py-3 text-stone-600 text-sm">{formatDate(record.deathDate)}</td>
                       <td className="px-4 py-3 text-stone-600 text-sm">{calcAge(record.birthDate, record.deathDate)}</td>
                       <td className="px-4 py-3 text-stone-600 text-sm">{record.relation || "-"}</td>
-                      <td className="px-4 py-3 text-stone-600">
-                        {record.householder.familyRegister ? (
-                          <Link
-                            href={`/family-register/${record.householder.familyRegister.id}`}
-                            className="text-amber-700 hover:text-amber-800 hover:underline text-sm"
-                          >
-                            {record.householder.familyRegister.name}
-                          </Link>
-                        ) : (
-                          <span className="text-stone-300 text-sm">未設定</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <Link href={"/members/" + record.id} className="text-amber-700 hover:text-amber-800 hover:underline">
-                          詳細・編集
-                        </Link>
-                      </td>
                     </tr>
                   </Fragment>
                 ))}
