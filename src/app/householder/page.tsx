@@ -24,7 +24,6 @@ interface Householder {
 export default function HouseholderPage() {
   const [householderList, setHouseholderList] = useState<Householder[]>([]);
   const [query, setQuery] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,7 +61,6 @@ export default function HouseholderPage() {
     try {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
-      if (showInactive) params.set("active", "false");
       const res = await fetchWithAuth(`/api/householder?${params}`);
       const data = await res.json();
 
@@ -85,7 +83,7 @@ export default function HouseholderPage() {
     } finally {
       setLoading(false);
     }
-  }, [query, showInactive]);
+  }, [query]);
 
   useEffect(() => {
     const timer = setTimeout(fetchHouseholders, 300);
@@ -131,15 +129,6 @@ export default function HouseholderPage() {
           onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
           className="flex-1 border border-stone-300 rounded-lg px-4 py-2 text-base text-stone-800 bg-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400"
         />
-        <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showInactive}
-            onChange={(e) => { setShowInactive(e.target.checked); setCurrentPage(1); }}
-            className="rounded"
-          />
-          離檀者も表示
-        </label>
       </div>
 
       {loading ? (
