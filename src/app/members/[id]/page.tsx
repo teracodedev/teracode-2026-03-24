@@ -441,6 +441,10 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
           async function handleDownload(type: string) {
             try {
+              if (!member) {
+                alert("会員情報の取得後に再度お試しください");
+                return;
+              }
               const res = await fetchWithAuth(`/api/members/${id}/document/${type}`);
               if (!res.ok) {
                 alert("ダウンロードに失敗しました");

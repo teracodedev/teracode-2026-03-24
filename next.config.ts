@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Prisma は Turbopack/Route Handler でバンドルすると実行時に壊れることがあるため外部化する
   serverExternalPackages: ["@prisma/client", "prisma"],
-  // デプロイ高速化: build 時の ESLint 実行を無効化（lint は別途任意/CI で実施）
-  eslint: { ignoreDuringBuilds: true },
+  // Next.js 16 では `next.config.ts` の `eslint` オプション（ignoreDuringBuilds 等）は非対応。
+  // そのため build 時の lint 無効化は設定ではなく、Next.js 側の挙動（ビルドで lint しない）に委ねる。
 
   // ハッシュ付きアセットのみ長期キャッシュ（HTML の no-store は nginx 側で付与）
   async headers() {
