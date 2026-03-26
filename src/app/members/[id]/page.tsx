@@ -419,26 +419,70 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       {/* ダウンロード */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
         <h2 className="font-semibold text-stone-700 mb-3 text-sm">ダウンロード</h2>
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: "葬儀法名", type: "sogi" },
-            { label: "葬儀院号法名", type: "sogi-ingo" },
-            { label: "年回法名", type: "nenkai" },
-            { label: "年回院号法名", type: "nenkai-ingo" },
-            { label: "中陰表・年回表（法名）", type: "chuin" },
-            { label: "中陰表・年回表（院号法名）", type: "chuin-ingo" },
+        {(() => {
+          // 法名の文字数でテンプレートを自動選択（6文字→院号法名、それ以外→法名）
+          const dharmaLen = member.dharmaName?.length ?? 0;
+          const isIngo = dharmaLen === 6;
+          const labelMap: Record<string, string> = {
+            sogi: "葬儀法名",
+            "sogi-ingo": "葬儀院号法名",
+            nenkai: "年回法名",
+            "nenkai-ingo": "年回院号法名",
+            chuin: "中陰表・年回表",
+            "chuin-ingo": "中陰表・年回表（院号法名）",
+            noukansoungou: "納棺尊号",
+          };
+          const buttons = [
+            { label: "葬儀法名", type: isIngo ? "sogi-ingo" : "sogi" },
+            { label: "年回法名", type: isIngo ? "nenkai-ingo" : "nenkai" },
+            { label: "中陰表・年回表", type: isIngo ? "chuin-ingo" : "chuin" },
             { label: "納棺尊号", type: "noukansoungou" },
-          ].map(({ label, type }) => (
-            <a
-              key={type}
-              href={`/api/members/${id}/document/${type}`}
-              download
-              className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
-            >
-              ⬇ {label}
-            </a>
-          ))}
-        </div>
+          ];
+
+          async function handleDownload(type: string) {
+            try {
+              const res = await fetchWithAuth(`/api/members/${id}/document/${type}`);
+              if (!res.ok) {
+                alert("ダウンロードに失敗しました");
+                return;
+              }
+              const blob = await res.blob();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              const name = member.familyName + (member.givenName || "");
+              const docLabel = labelMap[type] ?? type;
+              a.download = type === "noukansoungou"
+                ? "納棺尊号.docx"
+                : `${name}_${docLabel}.docx`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            } catch {
+              alert("ダウンロードに失敗しました");
+            }
+          }
+
+          return (
+            <div className="space-y-2">
+              {isIngo && (
+                <p className="text-xs text-stone-400">法名が6文字のため、院号法名テンプレートを使用します</p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {buttons.map(({ label, type }) => (
+                  <button
+                    key={type}
+                    onClick={() => handleDownload(type)}
+                    className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300 cursor-pointer"
+                  >
+                    ⬇ {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 基本情報 */}
