@@ -381,7 +381,6 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
                     <div className="flex-1 min-w-0">
                       <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
                       {m.relation && <span className="ml-2 text-sm text-stone-400">{m.relation}</span>}
-                      <div className="text-xs text-stone-400">戸主: {(m as { householderName?: string }).householderName}</div>
                     </div>
                     <Link href={`/members/${m.id}`}
                       className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 font-medium">
@@ -409,7 +408,7 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
                       <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
                       {m.dharmaName && <span className="ml-2 text-sm text-stone-400">{m.dharmaName}</span>}
                       <div className="text-xs text-stone-400">
-                        命日: {formatDate(m.deathDate)} ／ 戸主: {(m as { householderName?: string }).householderName}
+                        命日: {formatDate(m.deathDate)}
                       </div>
                     </div>
                     <Link href={`/members/${m.id}`}
