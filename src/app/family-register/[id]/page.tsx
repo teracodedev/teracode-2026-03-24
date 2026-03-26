@@ -83,7 +83,6 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
   const [linkQuery, setLinkQuery] = useState("");
   const [linkResults, setLinkResults] = useState<{ id: string; familyName: string; givenName: string; familyRegisterId: string | null }[]>([]);
   const [linking, setLinking] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -376,39 +375,21 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
             <p className="text-stone-400 text-sm">存命の世帯員が登録されていません</p>
           ) : (
             <div className="space-y-2">
-              {livingMembers.map((m) => {
-                const isExpanded = expandedId === m.id;
-                return (
-                  <div key={m.id} className="border border-stone-100 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 px-3 py-2.5">
-                      <button onClick={() => setExpandedId(isExpanded ? null : m.id)}
-                        className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 font-medium">
-                        {isExpanded ? "▲" : "詳細"}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
-                        {m.relation && <span className="ml-2 text-sm text-stone-400">{m.relation}</span>}
-                        <div className="text-xs text-stone-400">戸主: {(m as { householderName?: string }).householderName}</div>
-                      </div>
-                      <Link href={`/householder/${m.householderId}`}
-                        className="shrink-0 text-xs text-stone-400 hover:text-stone-600 border border-stone-200 px-2 py-1 rounded">
-                        台帳へ
-                      </Link>
+              {livingMembers.map((m) => (
+                <div key={m.id} className="border border-stone-100 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
+                      {m.relation && <span className="ml-2 text-sm text-stone-400">{m.relation}</span>}
+                      <div className="text-xs text-stone-400">戸主: {(m as { householderName?: string }).householderName}</div>
                     </div>
-                    {isExpanded && (
-                      <div className="bg-stone-50 border-t border-stone-200 px-4 py-3">
-                        <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                          {m.birthDate && <div><dt className="inline text-stone-400">生年月日: </dt><dd className="inline">{formatDate(m.birthDate)}</dd></div>}
-                          {m.dharmaName && <div><dt className="inline text-stone-400">法名: </dt><dd className="inline">{m.dharmaName}</dd></div>}
-                          {m.phone1 && <div><dt className="inline text-stone-400">電話: </dt><dd className="inline">{m.phone1}</dd></div>}
-                          {(m.address1 || m.address2) && <div className="col-span-2"><dt className="inline text-stone-400">住所: </dt><dd className="inline">{[m.address1, m.address2, m.address3].filter(Boolean).join(" ")}</dd></div>}
-                          {m.note && <div className="col-span-2"><dt className="inline text-stone-400">備考: </dt><dd className="inline">{m.note}</dd></div>}
-                        </dl>
-                      </div>
-                    )}
+                    <Link href={`/members/${m.id}`}
+                      className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 font-medium">
+                      詳細
+                    </Link>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -421,40 +402,23 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
             <p className="text-stone-400 text-sm">故人の世帯員が登録されていません</p>
           ) : (
             <div className="space-y-2">
-              {deceasedMembers.map((m) => {
-                const isExpanded = expandedId === m.id;
-                return (
-                  <div key={m.id} className="border border-stone-100 rounded-lg overflow-hidden">
-                    <div className="flex items-center gap-2 px-3 py-2.5">
-                      <button onClick={() => setExpandedId(isExpanded ? null : m.id)}
-                        className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 font-medium">
-                        {isExpanded ? "▲" : "詳細"}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
-                        {m.dharmaName && <span className="ml-2 text-sm text-stone-400">{m.dharmaName}</span>}
-                        <div className="text-xs text-stone-400">
-                          命日: {formatDate(m.deathDate)} ／ 戸主: {(m as { householderName?: string }).householderName}
-                        </div>
+              {deceasedMembers.map((m) => (
+                <div key={m.id} className="border border-stone-100 rounded-lg overflow-hidden">
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium text-stone-800">{m.familyName} {m.givenName || ""}</span>
+                      {m.dharmaName && <span className="ml-2 text-sm text-stone-400">{m.dharmaName}</span>}
+                      <div className="text-xs text-stone-400">
+                        命日: {formatDate(m.deathDate)} ／ 戸主: {(m as { householderName?: string }).householderName}
                       </div>
-                      <Link href={`/householder/${m.householderId}`}
-                        className="shrink-0 text-xs text-stone-400 hover:text-stone-600 border border-stone-200 px-2 py-1 rounded">
-                        台帳へ
-                      </Link>
                     </div>
-                    {isExpanded && (
-                      <div className="bg-stone-50 border-t border-stone-200 px-4 py-3">
-                        <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
-                          {m.birthDate && <div><dt className="inline text-stone-400">生年月日: </dt><dd className="inline">{formatDate(m.birthDate)}</dd></div>}
-                          {m.deathDate && <div><dt className="inline text-stone-400">命日: </dt><dd className="inline">{formatDate(m.deathDate)}</dd></div>}
-                          {m.dharmaName && <div><dt className="inline text-stone-400">法名: </dt><dd className="inline">{m.dharmaName}</dd></div>}
-                          {m.note && <div className="col-span-2"><dt className="inline text-stone-400">備考: </dt><dd className="inline">{m.note}</dd></div>}
-                        </dl>
-                      </div>
-                    )}
+                    <Link href={`/members/${m.id}`}
+                      className="shrink-0 border border-stone-300 rounded px-2 py-1 text-sm text-stone-600 hover:bg-stone-100 font-medium">
+                      詳細
+                    </Link>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>
