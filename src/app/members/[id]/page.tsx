@@ -454,7 +454,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              const name = member.familyName + (member.givenName || "");
+              const name = member!.familyName + (member!.givenName || "");
               const docLabel = labelMap[type] ?? type;
               a.download = type === "noukansoungou"
                 ? "納棺尊号.docx"

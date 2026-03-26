@@ -1,153 +1,54 @@
-import JSZip from "jszip";
+import Docxtemplater from "docxtemplater";
+import PizZip from "pizzip";
+import nunjucks from "nunjucks";
 import fs from "fs";
 
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
+// nunjucks 環境（autoescape オフ：docxtemplater 側で XML エスケープを管理）
+const njkEnv = new nunjucks.Environment(null, { autoescape: false });
 
 /**
- * Fill {{variable}} placeholders in a single paragraph element.
- * Handles cases where {{ ... }} is split across multiple <w:t> runs.
- */
-function fillParagraph(para: string, vars: Record<string, string>): string {
-  // Collect all <w:t> text nodes with their positions in the paragraph string
-  const nodes: {
-    open: string;
-    text: string;
-    close: string;
-    index: number;
-    fullLength: number;
-  }[] = [];
-  const regex = /(<w:t[^>]*>)([^<]*)(<\/w:t>)/g;
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(para)) !== null) {
-    nodes.push({
-      open: m[1],
-      text: m[2],
-      close: m[3],
-      index: m.index,
-      fullLength: m[0].length,
-    });
-  }
-
-  if (nodes.length === 0) return para;
-
-  // Concatenate all text content from this paragraph
-  const fullText = nodes.map((n) => n.text).join("");
-
-  // Check if any replacement is needed
-  let hasChange = false;
-  for (const k of Object.keys(vars)) {
-    if (fullText.includes(`{{${k}}}`)) {
-      hasChange = true;
-      break;
-    }
-  }
-  if (!hasChange) return para;
-
-  // Build character position ranges for each node
-  let pos = 0;
-  const nodeRanges = nodes.map((node) => {
-    const start = pos;
-    pos += node.text.length;
-    return { ...node, start, end: pos };
-  });
-
-  // Mark each character in fullText as normal / first-of-placeholder / skip
-  const charStatus: ("normal" | "first" | "skip")[] = new Array(
-    fullText.length
-  ).fill("normal");
-  const charReplace: string[] = new Array(fullText.length).fill("");
-
-  for (const [k, v] of Object.entries(vars)) {
-    const placeholder = `{{${k}}}`;
-    let searchPos = 0;
-    while (true) {
-      const idx = fullText.indexOf(placeholder, searchPos);
-      if (idx === -1) break;
-      charStatus[idx] = "first";
-      charReplace[idx] = escapeXml(v);
-      for (let i = idx + 1; i < idx + placeholder.length; i++) {
-        charStatus[i] = "skip";
-      }
-      searchPos = idx + placeholder.length;
-    }
-  }
-
-  // Build new text content for each node
-  const newNodeTexts = nodeRanges.map((node) => {
-    let text = "";
-    for (let i = node.start; i < node.end; i++) {
-      if (charStatus[i] === "normal") text += fullText[i];
-      else if (charStatus[i] === "first") text += charReplace[i];
-      // 'skip' → omit
-    }
-    return text;
-  });
-
-  // Rebuild the paragraph XML with updated text nodes (process in reverse to preserve offsets)
-  let result = para;
-  for (let i = nodeRanges.length - 1; i >= 0; i--) {
-    const node = nodeRanges[i];
-    const newText = newNodeTexts[i];
-    // Add xml:space="preserve" if text has leading/trailing spaces
-    let open = node.open;
-    if (
-      newText !== newText.trim() &&
-      newText.trim().length > 0 &&
-      !open.includes("xml:space")
-    ) {
-      open = open.replace("<w:t", '<w:t xml:space="preserve"');
-    }
-    result =
-      result.slice(0, node.index) +
-      open +
-      newText +
-      node.close +
-      result.slice(node.index + node.fullLength);
-  }
-
-  return result;
-}
-
-/**
- * Fill all {{variable}} placeholders in a document.xml string.
- * Processes each <w:p> paragraph independently to handle split-run placeholders.
- */
-function fillXml(xml: string, vars: Record<string, string>): string {
-  return xml.replace(/<w:p\b[\s\S]*?<\/w:p>/g, (para) =>
-    fillParagraph(para, vars)
-  );
-}
-
-/**
- * Fill a .docx template file with variable values.
- * Returns the filled document as a Buffer.
+ * .docx テンプレートに変数を埋め込んで返す。
+ *
+ * テンプレート内の {{ 変数名 }} を nunjucks で評価する。
+ * docxtemplater が XML の断片化（複数の <w:t> ノードへの分割）を自動処理し、
+ * nunjucks がその式を評価する。
  */
 export async function fillDocxTemplate(
   templatePath: string,
   vars: Record<string, string>
 ): Promise<Buffer> {
-  const fileBuffer = fs.readFileSync(templatePath);
-  const zip = await JSZip.loadAsync(fileBuffer);
+  const content = fs.readFileSync(templatePath, "binary");
+  const zip = new PizZip(content);
 
-  const docEntry = zip.file("word/document.xml");
-  if (!docEntry) throw new Error("word/document.xml not found in template");
+  const doc = new Docxtemplater(zip, {
+    paragraphLoop: true,
+    linebreaks: true,
+    // テンプレートの {{ }} を nunjucks と同じ記法で使用
+    delimiters: { start: "{{", end: "}}" },
+    // nunjucks をパーサーとして組み込む
+    parser: (tag: string) => ({
+      get: (scope: Record<string, string>) => {
+        try {
+          // {{ 変数名 }} をnunjucksで評価
+          return njkEnv.renderString(`{{ ${tag} }}`, scope) ?? "";
+        } catch {
+          return "";
+        }
+      },
+    }),
+  });
 
-  const docXml = await docEntry.async("string");
-  const newDocXml = fillXml(docXml, vars);
-  zip.file("word/document.xml", newDocXml);
+  doc.render(vars);
 
-  const data = await zip.generateAsync({ type: "nodebuffer" });
-  return Buffer.from(data);
+  const buffer = doc.getZip().generate({
+    type: "nodebuffer",
+    compression: "DEFLATE",
+  });
+
+  return Buffer.from(buffer);
 }
 
-// ── Date utilities ──────────────────────────────────────────────────────────
+// ── 日付ユーティリティ ────────────────────────────────────────────
 
 function toKanji(n: number): string {
   if (n === 0) return "〇";
@@ -221,7 +122,7 @@ export function calcAgeAtDeath(
   return String(age);
 }
 
-// 中陰表 dates (命日を1日目として数える)
+// 中陰表（命日を1日目として数える）
 export const CHUIN_SCHEDULE = [
   { key: "初七日忌", days: 6 },
   { key: "二七日忌", days: 13 },
@@ -232,7 +133,7 @@ export const CHUIN_SCHEDULE = [
   { key: "四十九日忌", days: 48 },
 ];
 
-// 年回 dates
+// 年回表
 export const NENKAI_SCHEDULE = [
   { key: "一周忌", years: 1 },
   { key: "三回忌", years: 2 },
@@ -244,7 +145,7 @@ export const NENKAI_SCHEDULE = [
   { key: "五十回忌", years: 49 },
 ];
 
-/** Calculate the next upcoming memorial service label (中陰 or 年回) */
+/** 直近の仏事ラベルを返す（中陰 → 年回の順） */
 export function getNextMemorialLabel(deathDate: Date): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
