@@ -10,6 +10,7 @@ import {
   addYears,
   calcAgeAtDeath,
   getNextMemorialLabel,
+  toFullWidthHiragana,
   CHUIN_SCHEDULE,
   NENKAI_SCHEDULE,
 } from "@/lib/docx-template";
@@ -76,7 +77,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const vars = buildVars(member, type);
     const buffer = await fillDocxTemplate(templatePath, vars);
 
-    const downloadName = buildFilename(member, type);
+    const downloadName = buildFilename(member, type, vars["年回"]);
     return new NextResponse(new Uint8Array(buffer), {
       headers: buildHeaders(downloadName),
     });
@@ -120,13 +121,13 @@ function buildVars(
   const birthDate = member.birthDate ? new Date(member.birthDate) : null;
 
   const vars: Record<string, string> = {
-    命日: toWareki(deathDate),
+    命日: toWareki(deathDate) + "往生",
     法名: member.dharmaName ?? "",
-    法名ふりがな: member.dharmaNameKana ?? "",
+    法名ふりがな: toFullWidthHiragana(member.dharmaNameKana),
     姓: member.familyName,
     名: member.givenName ?? "",
-    姓ふりがな: member.familyNameKana ?? "",
-    名ふりがな: member.givenNameKana ?? "",
+    姓ふりがな: toFullWidthHiragana(member.familyNameKana),
+    名ふりがな: toFullWidthHiragana(member.givenNameKana),
     享年: calcAgeAtDeath(birthDate, deathDate),
     年回: getNextMemorialLabel(deathDate),
   };
@@ -144,8 +145,11 @@ function buildVars(
   return vars;
 }
 
-function buildFilename(member: MemberWithHouseholder, type: string): string {
+function buildFilename(member: MemberWithHouseholder, type: string, memorialLabel?: string): string {
   const name = member.familyName + (member.givenName ? member.givenName : "");
+  if ((type === "nenkai" || type === "nenkai-ingo") && memorialLabel) {
+    return `${name}の${memorialLabel}.docx`;
+  }
   const labelMap: Record<string, string> = {
     sogi: "葬儀法名",
     "sogi-ingo": "葬儀院号法名",
@@ -154,7 +158,7 @@ function buildFilename(member: MemberWithHouseholder, type: string): string {
     nenkai: "年回法名",
     "nenkai-ingo": "年回院号法名",
   };
-  return `${name}_${labelMap[type] ?? type}.docx`;
+  return `${name}の${labelMap[type] ?? type}.docx`;
 }
 
 function buildHeaders(filename: string): Record<string, string> {

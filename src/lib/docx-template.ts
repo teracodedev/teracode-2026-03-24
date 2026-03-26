@@ -111,6 +111,20 @@ export function addYears(date: Date, years: number): Date {
   return d;
 }
 
+const KANJI_DIGITS = ["", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+
+function toKanjiNumber(n: number): string {
+  if (n <= 0) return "";
+  let result = "";
+  const hundreds = Math.floor(n / 100);
+  const tens = Math.floor((n % 100) / 10);
+  const ones = n % 10;
+  if (hundreds > 0) result += (hundreds === 1 ? "" : KANJI_DIGITS[hundreds]) + "百";
+  if (tens > 0) result += (tens === 1 ? "" : KANJI_DIGITS[tens]) + "十";
+  if (ones > 0) result += KANJI_DIGITS[ones];
+  return result;
+}
+
 export function calcAgeAtDeath(
   birthDate: Date | null,
   deathDate: Date
@@ -119,7 +133,47 @@ export function calcAgeAtDeath(
   let age = deathDate.getFullYear() - birthDate.getFullYear();
   const m = deathDate.getMonth() - birthDate.getMonth();
   if (m < 0 || (m === 0 && deathDate.getDate() < birthDate.getDate())) age--;
-  return String(age);
+  return toKanjiNumber(age) + "歳";
+}
+
+export function toFullWidthHiragana(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    // 半角カタカナ → 全角カタカナ
+    .replace(/[\uFF61-\uFF9F]/g, (ch) => {
+      const map: Record<string, string> = {
+        "ｦ": "ヲ", "ｧ": "ァ", "ｨ": "ィ", "ｩ": "ゥ", "ｪ": "ェ", "ｫ": "ォ",
+        "ｬ": "ャ", "ｭ": "ュ", "ｮ": "ョ", "ｯ": "ッ", "ｰ": "ー",
+        "ｱ": "ア", "ｲ": "イ", "ｳ": "ウ", "ｴ": "エ", "ｵ": "オ",
+        "ｶ": "カ", "ｷ": "キ", "ｸ": "ク", "ｹ": "ケ", "ｺ": "コ",
+        "ｻ": "サ", "ｼ": "シ", "ｽ": "ス", "ｾ": "セ", "ｿ": "ソ",
+        "ﾀ": "タ", "ﾁ": "チ", "ﾂ": "ツ", "ﾃ": "テ", "ﾄ": "ト",
+        "ﾅ": "ナ", "ﾆ": "ニ", "ﾇ": "ヌ", "ﾈ": "ネ", "ﾉ": "ノ",
+        "ﾊ": "ハ", "ﾋ": "ヒ", "ﾌ": "フ", "ﾍ": "ヘ", "ﾎ": "ホ",
+        "ﾏ": "マ", "ﾐ": "ミ", "ﾑ": "ム", "ﾒ": "メ", "ﾓ": "モ",
+        "ﾔ": "ヤ", "ﾕ": "ユ", "ﾖ": "ヨ",
+        "ﾗ": "ラ", "ﾘ": "リ", "ﾙ": "ル", "ﾚ": "レ", "ﾛ": "ロ",
+        "ﾜ": "ワ", "ﾝ": "ン", "ﾞ": "゛", "ﾟ": "゜",
+      };
+      return map[ch] ?? ch;
+    })
+    // 濁点・半濁点の結合
+    .replace(/([ウカキクケコサシスセソタチツテトハヒフヘホ])゛/g, (_, b) => {
+      const v: Record<string, string> = {
+        "ウ": "ヴ", "カ": "ガ", "キ": "ギ", "ク": "グ", "ケ": "ゲ", "コ": "ゴ",
+        "サ": "ザ", "シ": "ジ", "ス": "ズ", "セ": "ゼ", "ソ": "ゾ",
+        "タ": "ダ", "チ": "ヂ", "ツ": "ヅ", "テ": "デ", "ト": "ド",
+        "ハ": "バ", "ヒ": "ビ", "フ": "ブ", "ヘ": "ベ", "ホ": "ボ",
+      };
+      return v[b] ?? b + "゛";
+    })
+    .replace(/([ハヒフヘホ])゜/g, (_, b) => {
+      const p: Record<string, string> = { "ハ": "パ", "ヒ": "ピ", "フ": "プ", "ヘ": "ペ", "ホ": "ポ" };
+      return p[b] ?? b + "゜";
+    })
+    // 全角カタカナ → ひらがな
+    .replace(/[\u30A1-\u30F6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60))
+    .trim();
 }
 
 // 中陰表（命日を1日目として数える）
