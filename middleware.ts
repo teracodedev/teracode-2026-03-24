@@ -40,6 +40,6 @@ export const config = {
     "/genzaicho",
     "/householder",
     "/householder/:path*",
-    "/kakucho",
+    "/kakocho",
   ],
 };

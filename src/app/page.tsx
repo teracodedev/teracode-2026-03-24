@@ -56,7 +56,7 @@ export default function Home() {
         </Link>
 
         <Link
-          href="/kakucho"
+          href="/kakocho"
           className="block bg-white rounded-xl shadow-sm border border-stone-200 p-8 hover:shadow-md hover:border-stone-300 transition-all group"
         >
           <div className="text-4xl mb-4" suppressHydrationWarning>

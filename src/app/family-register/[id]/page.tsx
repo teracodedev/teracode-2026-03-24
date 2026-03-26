@@ -68,7 +68,7 @@ function formatGender(g: string | null) {
   return "不明";
 }
 
-type TabId = "householders" | "genzaicho" | "kakucho";
+type TabId = "householders" | "genzaicho" | "kakocho";
 
 export default function FamilyRegisterDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -175,7 +175,7 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
   const tabs: { id: TabId; label: string; count?: number }[] = [
     { id: "householders", label: "戸主" },
     { id: "genzaicho",    label: "現在帳", count: livingMembers.length },
-    { id: "kakucho",      label: "過去帳",  count: deceasedMembers.length },
+    { id: "kakocho",      label: "過去帳",  count: deceasedMembers.length },
   ];
 
   const inputCls = "w-full border border-stone-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-stone-400";
@@ -415,7 +415,7 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
       )}
 
       {/* 過去帳タブ */}
-      {activeTab === "kakucho" && (
+      {activeTab === "kakocho" && (
         <div className="bg-white rounded-xl border border-stone-200 p-4">
           {deceasedMembers.length === 0 ? (
             <p className="text-stone-400 text-sm">故人の世帯員が登録されていません</p>

@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(records);
   } catch (error) {
-    console.error("GET /api/kakucho error:", error);
+    console.error("GET /api/kakocho error:", error);
     return NextResponse.json({ error: (error as Error).message || "エラーが発生しました" }, { status: 500 });
   }
 }

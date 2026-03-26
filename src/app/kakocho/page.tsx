@@ -5,7 +5,7 @@ import { Fragment, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-interface KakuchoRecord {
+interface KakochoRecord {
   id: string;
   householderId: string;
   familyName: string;
@@ -49,9 +49,9 @@ function calcAge(birthDate: string | null, deathDate: string | null): string {
 
 const PAGE_SIZE = 10;
 
-export default function KakuchoPage() {
+export default function KakochoPage() {
   const router = useRouter();
-  const [records, setRecords] = useState<KakuchoRecord[]>([]);
+  const [records, setRecords] = useState<KakochoRecord[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,15 +61,15 @@ export default function KakuchoPage() {
     try {
       const params = new URLSearchParams();
       if (query) params.set("q", query);
-      const res = await fetchWithAuth("/api/kakucho?" + params);
+      const res = await fetchWithAuth("/api/kakocho?" + params);
       const data = await res.json();
       const rows = Array.isArray(data) ? data : [];
       setRecords(
         rows.filter(
-          (r): r is KakuchoRecord =>
+          (r): r is KakochoRecord =>
             r != null &&
             typeof r === "object" &&
-            typeof (r as KakuchoRecord).householder?.id === "string"
+            typeof (r as KakochoRecord).householder?.id === "string"
         )
       );
     } catch (err) {

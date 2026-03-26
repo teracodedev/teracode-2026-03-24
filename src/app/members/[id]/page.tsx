@@ -211,6 +211,17 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  // Googleカレンダー用テキスト
+  const [ceremonyTime, setCeremonyTime] = useState("11:00");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  function copyText(text: string, id: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
+
   // 編集モーダル
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -338,7 +349,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           </Link>
         )}
         <Link
-          href="/kakucho"
+          href="/kakocho"
           className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
         >
           過去帳（物故者リスト）と戻る
@@ -351,14 +362,55 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       {/* 直近の仏事 */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
         <h2 className="font-semibold text-stone-700 mb-3 text-sm">直近の仏事</h2>
-        {nextCeremony ? (
-          <div className="text-sm text-red-600 space-y-1">
-            <p>
-              {fullName}の<span className="font-medium">{nextCeremony.label}</span>：
-              {formatDateWestern(nextCeremony.date)}（{toWareki(nextCeremony.date)}）
-            </p>
-          </div>
-        ) : (
+        {nextCeremony ? (() => {
+          const householderName = member.householder.familyName + member.householder.givenName;
+          const relationPart = member.relation ? ` （${householderName}の${member.relation}）` : "";
+          const ceremonyLabel = `${fullName}の${nextCeremony.label}`;
+          const addr = [member.householder.address1, member.householder.address2, member.householder.address3].filter(Boolean).join("");
+          const phone = member.householder.phone1 || "";
+          const homeText = `<至法>${ceremonyTime} ${householderName}${relationPart} ${ceremonyLabel}＠自宅［${addr}、、${phone}］ 至法受付`;
+          const templeText = `<至法>${ceremonyTime} ${householderName}${relationPart} ${ceremonyLabel}＠善法寺本堂 名 至法受付`;
+          return (
+            <div className="space-y-4">
+              <p className="text-sm text-red-600 font-medium">
+                {fullName}の<span className="font-semibold">{nextCeremony.label}</span>：
+                {formatDateWestern(nextCeremony.date)}（{toWareki(nextCeremony.date)}）
+              </p>
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-stone-500 whitespace-nowrap">受付時間</label>
+                <input
+                  type="time"
+                  value={ceremonyTime}
+                  onChange={e => setCeremonyTime(e.target.value)}
+                  className="border border-stone-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
+                />
+              </div>
+              {[
+                { id: "home", label: "ご自宅の場合", text: homeText },
+                { id: "temple", label: "お寺参りの場合", text: templeText },
+              ].map(({ id, label, text }) => (
+                <div key={id} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-stone-600">{label}</span>
+                    <button
+                      onClick={() => copyText(text, id)}
+                      className="text-xs px-2.5 py-0.5 border border-stone-300 rounded hover:bg-stone-100 text-stone-600 transition-colors"
+                    >
+                      {copiedId === id ? "✓ コピー済" : "コピー"}
+                    </button>
+                  </div>
+                  <pre
+                    className="text-xs bg-stone-50 border border-stone-200 rounded p-2 whitespace-pre-wrap break-all font-mono select-all leading-relaxed cursor-text"
+                    onClick={() => copyText(text, id)}
+                    title="クリックでコピー"
+                  >
+                    {text}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          );
+        })() : (
           <p className="text-sm text-stone-400">直近の仏事はありません</p>
         )}
       </div>
