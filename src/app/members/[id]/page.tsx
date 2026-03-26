@@ -362,7 +362,10 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
         <h2 className="font-semibold text-stone-700 mb-3 text-sm">直近の仏事</h2>
         {nextCeremony ? (() => {
           const householderName = member.householder.familyName + member.householder.givenName;
-          const relationPart = member.relation ? ` （${householderName}の${member.relation}）` : "";
+          const rel = member.relation || "";
+          const relationPart = rel
+            ? ` （${rel.startsWith(householderName) ? rel : `${householderName}の${rel}`}）`
+            : "";
           const ceremonyLabel = `${fullName}の${nextCeremony.label}`;
           const addr = [member.householder.address1, member.householder.address2, member.householder.address3].filter(Boolean).join("");
           const phone = member.householder.phone1 || "";
@@ -417,14 +420,23 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4">
         <h2 className="font-semibold text-stone-700 mb-3 text-sm">ダウンロード</h2>
         <div className="flex flex-wrap gap-2">
-          {["年回案内(外)", "戸主宛名", "年回法名", "葬儀法名", "中報告・年回表", "納骨番号"].map((label) => (
-            <button
-              key={label}
+          {[
+            { label: "葬儀法名", type: "sogi" },
+            { label: "葬儀院号法名", type: "sogi-ingo" },
+            { label: "年回法名", type: "nenkai" },
+            { label: "年回院号法名", type: "nenkai-ingo" },
+            { label: "中陰表・年回表（法名）", type: "chuin" },
+            { label: "中陰表・年回表（院号法名）", type: "chuin-ingo" },
+            { label: "納棺尊号", type: "noukansoungou" },
+          ].map(({ label, type }) => (
+            <a
+              key={type}
+              href={`/api/members/${id}/document/${type}`}
+              download
               className="text-xs px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-600 rounded border border-stone-300"
-              disabled
             >
-              {label}
-            </button>
+              ⬇ {label}
+            </a>
           ))}
         </div>
       </div>
