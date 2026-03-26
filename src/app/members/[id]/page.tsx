@@ -454,11 +454,18 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
               const url = URL.createObjectURL(blob);
               const a = document.createElement("a");
               a.href = url;
-              const name = member!.familyName + (member!.givenName || "");
+              const contentDisposition = res.headers.get("Content-Disposition");
+              const utf8FilenameMatch = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+              const basicFilenameMatch = contentDisposition?.match(/filename="?([^\";]+)"?/i);
+              const serverFilename = utf8FilenameMatch
+                ? decodeURIComponent(utf8FilenameMatch[1])
+                : basicFilenameMatch?.[1];
+              const name = member.familyName + (member.givenName || "");
               const docLabel = labelMap[type] ?? type;
-              a.download = type === "noukansoungou"
+              const fallbackName = type === "noukansoungou"
                 ? "納棺尊号.docx"
                 : `${name}_${docLabel}.docx`;
+              a.download = serverFilename || fallbackName;
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);

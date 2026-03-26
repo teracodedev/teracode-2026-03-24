@@ -14,8 +14,8 @@ export const metadata: Metadata = {
   description: "戸主・法要を管理するシステム",
 };
 
-/** デプロイ直後の ChunkLoadError 用（public/ の配信に依存しない） */
-const CHUNK_RECOVERY_INLINE = `(function(){var k="teracode_chunk_reload";function sr(r){var t=r&&typeof r==="object"&&r.message?String(r.message):String(r||"");if(!/ChunkLoadError|Loading chunk|chunk load failed/i.test(t))return false;try{if(sessionStorage.getItem(k)==="1")return false;sessionStorage.setItem(k,"1")}catch(e){}return true}window.addEventListener("error",function(ev){if(sr(ev.error||ev.message))location.reload()});window.addEventListener("unhandledrejection",function(ev){if(sr(ev.reason))location.reload()})})();`;
+/** デプロイ直後の古いHTML参照に対する自己復旧（JS/CSSのハッシュ不一致時） */
+const CHUNK_RECOVERY_INLINE = `(function(){var K_CHUNK="teracode_chunk_reload";var K_CSS="teracode_css_reload";function once(k){try{if(sessionStorage.getItem(k)==="1")return false;sessionStorage.setItem(k,"1")}catch(e){}return true}function reloadOnce(k){if(once(k))location.reload()}function isChunkErr(r){var t=r&&typeof r==="object"&&r.message?String(r.message):String(r||"");return /ChunkLoadError|Loading chunk|chunk load failed/i.test(t)}window.addEventListener("error",function(ev){var el=ev&&ev.target;if(el&&el.tagName==="LINK"&&/\\/\\_next\\/static\\/css\\//.test(el.href||"")){reloadOnce(K_CSS);return}if(isChunkErr(ev.error||ev.message))reloadOnce(K_CHUNK)},true);window.addEventListener("unhandledrejection",function(ev){if(isChunkErr(ev.reason))reloadOnce(K_CHUNK)});window.addEventListener("DOMContentLoaded",function(){var links=document.querySelectorAll('link[rel="stylesheet"][href*="/_next/static/css/"]');if(!links.length)return;var pending=links.length;var done=false;function fail(){if(done)return;done=true;reloadOnce(K_CSS)}function ok(){pending-=1;if(pending<=0)done=true}links.forEach(function(link){if(link.sheet){ok();return}link.addEventListener("load",ok,{once:true});link.addEventListener("error",fail,{once:true})});setTimeout(function(){if(!done)fail()},2500)})})();`;
 
 export default async function RootLayout({
   children,

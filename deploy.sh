@@ -69,8 +69,15 @@ echo "[4/5] PM2 停止..."
 pm2 stop teracode 2>/dev/null || true
 
 echo "[5/5] ビルド..."
-# ビルドキャッシュを活かすため、.next 全消しはしない（standalone/static だけ同期し直す）
-rm -rf .next/standalone .next/static
+# 古いHTMLが旧ハッシュのCSS/JSを参照しても崩れないよう、既存staticを一時退避する
+STATIC_BACKUP_DIR="$(mktemp -d)"
+if [ -d .next/standalone/.next/static ]; then
+  mkdir -p "${STATIC_BACKUP_DIR}/static"
+  cp -a .next/standalone/.next/static/. "${STATIC_BACKUP_DIR}/static/"
+fi
+
+# ビルドキャッシュを活かすため、.next 全消しはしない（standalone だけ作り直す）
+rm -rf .next/standalone
 npm run build
 
 echo "[5b/5] standalone: public と .next/static を同期..."
@@ -88,11 +95,21 @@ fi
 if [ -d .next/static ]; then
   mkdir -p .next/standalone/.next/static
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete .next/static/ .next/standalone/.next/static/
+    # 現行ビルドの静的アセットを配置
+    rsync -a .next/static/ .next/standalone/.next/static/
+    # 旧HTML救済用に、過去ビルドのハッシュ資産も残す（同名は上書きしない）
+    if [ -d "${STATIC_BACKUP_DIR}/static" ]; then
+      rsync -a --ignore-existing "${STATIC_BACKUP_DIR}/static/" .next/standalone/.next/static/
+    fi
   else
     cp -r .next/static .next/standalone/.next/
+    if [ -d "${STATIC_BACKUP_DIR}/static" ]; then
+      cp -rn "${STATIC_BACKUP_DIR}/static/." .next/standalone/.next/static/ || true
+    fi
   fi
 fi
+
+rm -rf "${STATIC_BACKUP_DIR}"
 
 echo "[5c/5] PM2 再起動..."
 fuser -k 3000/tcp 2>/dev/null || true
