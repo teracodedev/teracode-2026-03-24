@@ -200,11 +200,27 @@ function handleYamlExport(member: MemberDetail) {
   URL.revokeObjectURL(url);
 }
 
+function toDateInputValue(dateStr: string | null): string {
+  if (!dateStr) return "";
+  return new Date(dateStr).toISOString().split("T")[0];
+}
+
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // 編集モーダル
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    familyName: "", givenName: "", familyNameKana: "", givenNameKana: "",
+    dharmaName: "", dharmaNameKana: "",
+    deathDate: "", birthDate: "",
+    relation: "", note: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchWithAuth("/api/members/" + id)
@@ -217,6 +233,61 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       })
       .catch(() => setLoading(false));
   }, [id]);
+
+  function openEdit() {
+    if (!member) return;
+    setEditForm({
+      familyName: member.familyName,
+      givenName: member.givenName || "",
+      familyNameKana: member.familyNameKana || "",
+      givenNameKana: member.givenNameKana || "",
+      dharmaName: member.dharmaName || "",
+      dharmaNameKana: member.dharmaNameKana || "",
+      deathDate: toDateInputValue(member.deathDate),
+      birthDate: toDateInputValue(member.birthDate),
+      relation: member.relation || "",
+      note: member.note || "",
+    });
+    setSaveError(null);
+    setIsEditing(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const res = await fetchWithAuth("/api/members/" + id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          familyName: editForm.familyName,
+          givenName: editForm.givenName || null,
+          familyNameKana: editForm.familyNameKana || null,
+          givenNameKana: editForm.givenNameKana || null,
+          dharmaName: editForm.dharmaName || null,
+          dharmaNameKana: editForm.dharmaNameKana || null,
+          deathDate: editForm.deathDate || null,
+          birthDate: editForm.birthDate || null,
+          relation: editForm.relation || null,
+          note: editForm.note || null,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        setSaveError(err.error || "保存に失敗しました");
+        return;
+      }
+      // 再取得して画面を更新
+      const updated = await fetchWithAuth("/api/members/" + id);
+      const data = await updated.json();
+      setMember(data);
+      setIsEditing(false);
+    } catch {
+      setSaveError("通信エラーが発生しました");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return <div className="text-center py-12 text-stone-400">読み込み中...</div>;
   if (notFound || !member) return <div className="text-center py-12 text-stone-400">記録が見つかりません</div>;
@@ -312,12 +383,12 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
         <div className="px-4 py-3 border-b border-stone-200 flex items-center justify-between">
           <h2 className="font-semibold text-stone-700 text-sm">基本情報</h2>
-          <Link
-            href={`/householder/${member.householder.id}`}
+          <button
+            onClick={openEdit}
             className="text-xs px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded"
           >
             編集
-          </Link>
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -430,6 +501,129 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           YAMLファイルのエクスポート
         </button>
       </div>
+
+      {/* 編集モーダル */}
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-stone-200 flex items-center justify-between">
+              <h2 className="font-semibold text-stone-800">過去帳情報を編集</h2>
+              <button onClick={() => setIsEditing(false)} className="text-stone-400 hover:text-stone-600 text-xl leading-none">✕</button>
+            </div>
+            <div className="px-6 py-4 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">姓 <span className="text-red-500">*</span></label>
+                  <input
+                    type="text"
+                    value={editForm.familyName}
+                    onChange={e => setEditForm(f => ({ ...f, familyName: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">名</label>
+                  <input
+                    type="text"
+                    value={editForm.givenName}
+                    onChange={e => setEditForm(f => ({ ...f, givenName: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">姓フリガナ</label>
+                  <input
+                    type="text"
+                    value={editForm.familyNameKana}
+                    onChange={e => setEditForm(f => ({ ...f, familyNameKana: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">名フリガナ</label>
+                  <input
+                    type="text"
+                    value={editForm.givenNameKana}
+                    onChange={e => setEditForm(f => ({ ...f, givenNameKana: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">法名</label>
+                  <input
+                    type="text"
+                    value={editForm.dharmaName}
+                    onChange={e => setEditForm(f => ({ ...f, dharmaName: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">法名フリガナ</label>
+                  <input
+                    type="text"
+                    value={editForm.dharmaNameKana}
+                    onChange={e => setEditForm(f => ({ ...f, dharmaNameKana: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">命日</label>
+                  <input
+                    type="date"
+                    value={editForm.deathDate}
+                    onChange={e => setEditForm(f => ({ ...f, deathDate: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-stone-500 mb-1">生年月日（享年計算用）</label>
+                  <input
+                    type="date"
+                    value={editForm.birthDate}
+                    onChange={e => setEditForm(f => ({ ...f, birthDate: e.target.value }))}
+                    className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-stone-500 mb-1">続柄</label>
+                <input
+                  type="text"
+                  value={editForm.relation}
+                  onChange={e => setEditForm(f => ({ ...f, relation: e.target.value }))}
+                  className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-stone-500 mb-1">備考</label>
+                <textarea
+                  value={editForm.note}
+                  onChange={e => setEditForm(f => ({ ...f, note: e.target.value }))}
+                  rows={3}
+                  className="w-full border border-stone-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none"
+                />
+              </div>
+              {saveError && <p className="text-sm text-red-600">{saveError}</p>}
+            </div>
+            <div className="px-6 py-4 border-t border-stone-200 flex justify-end gap-2">
+              <button
+                onClick={() => setIsEditing(false)}
+                disabled={saving}
+                className="px-4 py-2 text-sm border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-40"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !editForm.familyName}
+                className="px-4 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg disabled:opacity-40"
+              >
+                {saving ? "保存中..." : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
