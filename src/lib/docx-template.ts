@@ -217,10 +217,14 @@ export function getNextMemorialLabel(deathDate: Date): string {
   return "五十回忌";
 }
 
-/** 年回法名用ラベル：四十九日忌 → 一周忌 → 三回忌 … の順 */
+/** 年回法名用ラベル：葬儀 → 四十九日忌 → 一周忌 → 三回忌 … の順 */
 export function getNenkaiLabel(deathDate: Date): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const day7 = addDays(deathDate, 6);
+  day7.setHours(0, 0, 0, 0);
+  if (day7 >= today) return "葬儀";
 
   const shijukuNichi = addDays(deathDate, 48);
   shijukuNichi.setHours(0, 0, 0, 0);
