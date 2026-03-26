@@ -10,6 +10,7 @@ import {
   addYears,
   calcAgeAtDeath,
   getNextMemorialLabel,
+  getNenkaiLabel,
   toFullWidthHiragana,
   CHUIN_SCHEDULE,
   NENKAI_SCHEDULE,
@@ -129,7 +130,7 @@ function buildVars(
     姓ふりがな: toFullWidthHiragana(member.familyNameKana),
     名ふりがな: toFullWidthHiragana(member.givenNameKana),
     享年: calcAgeAtDeath(birthDate, deathDate),
-    年回: getNextMemorialLabel(deathDate),
+    年回: (type === "nenkai" || type === "nenkai-ingo") ? getNenkaiLabel(deathDate) : getNextMemorialLabel(deathDate),
   };
 
   // 中陰表 / 年回表 date placeholders
