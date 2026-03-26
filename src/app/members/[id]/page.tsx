@@ -155,7 +155,7 @@ function getNextCeremony(deathDate: string): { label: string; date: string } | n
   const shijukuDate = new Date(addDays(deathDate, 48));
   shijukuDate.setHours(0, 0, 0, 0);
   if (shijukuDate >= today) {
-    return { label: "四十九日（七七日忌）", date: addDays(deathDate, 48) };
+    return { label: "四十九日忌", date: addDays(deathDate, 48) };
   }
 
   // 年回チェック
