@@ -504,30 +504,30 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           <table className="w-full text-sm">
             <thead className="bg-stone-50 border-b border-stone-200">
               <tr>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">氏名</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">フリガナ</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">法名</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">法名フリガナ</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">命日（西暦）</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">命日（和暦）</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">享年</th>
-                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs">続柄</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">氏名</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">フリガナ</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">法名</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">法名フリガナ</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">命日（西暦）</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">命日（和暦）</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">享年</th>
+                <th className="text-left px-3 py-2 text-stone-500 font-medium text-xs whitespace-nowrap">続柄</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="px-3 py-2 font-medium text-stone-800">{fullName}</td>
-                <td className="px-3 py-2 text-stone-600">{fullNameKana || "-"}</td>
-                <td className="px-3 py-2 text-stone-600">{member.dharmaName || "-"}</td>
-                <td className="px-3 py-2 text-stone-600">{member.dharmaNameKana || "-"}</td>
+                <td className="px-3 py-2 font-medium text-stone-800 whitespace-nowrap">{fullName}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">{fullNameKana || "-"}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">{member.dharmaName || "-"}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">{member.dharmaNameKana || "-"}</td>
                 <td className="px-3 py-2 text-stone-600 whitespace-nowrap">
                   <span className="text-amber-700 hover:underline cursor-default">{formatDate(member.deathDate)}</span>
                 </td>
                 <td className="px-3 py-2 text-stone-600 whitespace-nowrap">
                   <span className="text-amber-700 hover:underline cursor-default">{toWareki(member.deathDate)}</span>
                 </td>
-                <td className="px-3 py-2 text-stone-600">{calcAgeAtDeath(member.birthDate, member.deathDate)}</td>
-                <td className="px-3 py-2 text-stone-600">{member.relation || "-"}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">{calcAgeAtDeath(member.birthDate, member.deathDate)}</td>
+                <td className="px-3 py-2 text-stone-600 whitespace-nowrap">{member.relation || "-"}</td>
               </tr>
             </tbody>
           </table>
