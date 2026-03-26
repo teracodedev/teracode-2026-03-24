@@ -146,21 +146,11 @@ function getChuIn(): { label: string; days: number }[] {
   ];
 }
 
-// 直近の仏事を計算
+// 直近の仏事を計算（年回のみ、中陰は対象外）
 function getNextCeremony(deathDate: string): { label: string; date: string } | null {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // 中陰チェック
-  for (const ci of getChuIn()) {
-    const d = new Date(addDays(deathDate, ci.days));
-    d.setHours(0, 0, 0, 0);
-    if (d >= today) {
-      return { label: ci.label, date: addDays(deathDate, ci.days) };
-    }
-  }
-
-  // 年回チェック
   for (const nk of getNenkai(deathDate)) {
     const d = new Date(addYears(deathDate, nk.years));
     d.setHours(0, 0, 0, 0);
