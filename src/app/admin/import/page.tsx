@@ -73,7 +73,7 @@ export default function MdbImportPage() {
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 space-y-1">
         <p className="font-medium">インポート前にご確認ください</p>
         <ul className="list-disc list-inside space-y-0.5 text-amber-700">
-          <li>インポートは既存データに追記されます（重複チェックなし）。</li>
+          <li>既存データは全て削除され、インポートデータで上書きされます。</li>
           <li>対象テーブル: UTB001_戸主（戸主台帳）・UTB002_家族（家族員）</li>
           <li>大量データのインポートには数分かかる場合があります。</li>
         </ul>
