@@ -17,12 +17,17 @@ export async function GET(_req: NextRequest, { params }: Params) {
       include: {
         householders: {
           include: { members: true },
-          orderBy: { createdAt: "asc" },
         },
       },
     });
     if (!register) return NextResponse.json({ error: "見つかりません" }, { status: 404 });
-    return NextResponse.json(register);
+    const ordered = {
+      ...register,
+      householders: [...register.householders].sort(
+        (a, b) => a.createdAt.getTime() - b.createdAt.getTime(),
+      ),
+    };
+    return NextResponse.json(ordered);
   } catch (e) {
     console.error("GET /api/family-register/[id] error:", e);
     return NextResponse.json({ error: "データ取得エラー" }, { status: 500 });
