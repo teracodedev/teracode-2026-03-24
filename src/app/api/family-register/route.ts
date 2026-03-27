@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/require-auth";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 
 export const runtime = "nodejs";
 
@@ -12,19 +13,6 @@ export async function GET(req: NextRequest) {
 
   try {
     const registers = await prisma.familyRegister.findMany({
-      where: q
-        ? {
-            OR: [
-              { name: { contains: q } },
-              { householders: { some: { OR: [
-                { familyName: { contains: q } },
-                { givenName:  { contains: q } },
-                { familyNameKana: { contains: q } },
-                { givenNameKana:  { contains: q } },
-              ] } } },
-            ],
-          }
-        : undefined,
       include: {
         householders: {
           select: { id: true, familyName: true, givenName: true, familyNameKana: true, givenNameKana: true, isActive: true, address1: true, phone1: true, _count: { select: { members: true } } },
@@ -32,7 +20,24 @@ export async function GET(req: NextRequest) {
       },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(registers);
+    const filtered = registers.filter((register) =>
+      matchesNormalizedSearch(q, [
+        register.name,
+        ...register.householders.flatMap((householder) => [
+          householder.familyName,
+          householder.givenName,
+          `${householder.familyName} ${householder.givenName ?? ""}`,
+          `${householder.familyName}${householder.givenName ?? ""}`,
+          householder.familyNameKana,
+          householder.givenNameKana,
+          `${householder.familyNameKana ?? ""} ${householder.givenNameKana ?? ""}`,
+          `${householder.familyNameKana ?? ""}${householder.givenNameKana ?? ""}`,
+          householder.address1,
+          householder.phone1,
+        ]),
+      ])
+    );
+    return NextResponse.json(filtered);
   } catch (e) {
     console.error("GET /api/family-register error:", e);
     return NextResponse.json({ error: "データ取得エラー" }, { status: 500 });

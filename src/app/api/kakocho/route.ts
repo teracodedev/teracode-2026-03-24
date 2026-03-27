@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getHouseholderFieldMap, getHouseholderModelKind, getMemberDelegate } from "@/lib/prisma-models";
 import { requireAuth } from "@/lib/require-auth";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 
 export const runtime = "nodejs";
 
@@ -19,28 +20,10 @@ export async function GET(request: NextRequest) {
     };
     const fields = getHouseholderFieldMap(kind);
     const relationName = fields.relation;
-    const codeFilter = {
-      [relationName]: { [fields.code]: { contains: query, mode: "insensitive" } },
-    };
-    const familyNameFilter = {
-      [relationName]: { familyName: { contains: query, mode: "insensitive" } },
-    };
 
     const records = await memberDelegate.findMany({
       where: {
         deathDate: { not: null },
-        OR: query
-          ? [
-              { familyName: { contains: query, mode: "insensitive" } },
-              { givenName: { contains: query, mode: "insensitive" } },
-              { familyNameKana: { contains: query, mode: "insensitive" } },
-              { givenNameKana: { contains: query, mode: "insensitive" } },
-              { dharmaName: { contains: query, mode: "insensitive" } },
-              { dharmaNameKana: { contains: query, mode: "insensitive" } },
-              familyNameFilter,
-              codeFilter,
-            ]
-          : undefined,
       },
       include: {
         [relationName]: {
@@ -56,7 +39,28 @@ export async function GET(request: NextRequest) {
       orderBy: { deathDate: "desc" },
     });
 
-    return NextResponse.json(records);
+    const filtered = (records as Array<Record<string, unknown>>).filter((record) => {
+      const householder = record[relationName] as Record<string, unknown> | null | undefined;
+      return matchesNormalizedSearch(query, [
+        String(record.familyName ?? ""),
+        String(record.givenName ?? ""),
+        `${String(record.familyName ?? "")} ${String(record.givenName ?? "")}`,
+        `${String(record.familyName ?? "")}${String(record.givenName ?? "")}`,
+        String(record.familyNameKana ?? ""),
+        String(record.givenNameKana ?? ""),
+        `${String(record.familyNameKana ?? "")} ${String(record.givenNameKana ?? "")}`,
+        `${String(record.familyNameKana ?? "")}${String(record.givenNameKana ?? "")}`,
+        String(record.dharmaName ?? ""),
+        String(record.dharmaNameKana ?? ""),
+        String(householder?.familyName ?? ""),
+        String(householder?.givenName ?? ""),
+        `${String(householder?.familyName ?? "")} ${String(householder?.givenName ?? "")}`,
+        `${String(householder?.familyName ?? "")}${String(householder?.givenName ?? "")}`,
+        String(householder?.[fields.code] ?? ""),
+      ]);
+    });
+
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error("GET /api/kakocho error:", error);
     return NextResponse.json({ error: (error as Error).message || "エラーが発生しました" }, { status: 500 });

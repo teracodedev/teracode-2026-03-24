@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getHouseholderDelegate, getHouseholderFieldMap, getHouseholderModelKind } from "@/lib/prisma-models";
 import { requireAuth } from "@/lib/require-auth";
 import { prisma } from "@/lib/prisma";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,6 @@ export async function GET(request: NextRequest) {
       findMany: (args: unknown) => Promise<unknown>;
     };
     const fields = getHouseholderFieldMap(kind);
-    const codeFilter = { [fields.code]: { contains: query, mode: "insensitive" } };
 
     const include =
       kind === "householder"
@@ -32,24 +32,29 @@ export async function GET(request: NextRequest) {
     const householderList = await delegate.findMany({
       where: {
         isActive: activeOnly ? true : undefined,
-        OR: query
-          ? [
-              { familyName: { contains: query, mode: "insensitive" } },
-              { givenName: { contains: query, mode: "insensitive" } },
-              { familyNameKana: { contains: query, mode: "insensitive" } },
-              { givenNameKana: { contains: query, mode: "insensitive" } },
-              codeFilter,
-              { address1: { contains: query, mode: "insensitive" } },
-              { address2: { contains: query, mode: "insensitive" } },
-              { address3: { contains: query, mode: "insensitive" } },
-            ]
-          : undefined,
       },
       include,
       orderBy: [{ familyNameKana: "asc" }, { familyName: "asc" }],
     });
 
-    return NextResponse.json(householderList);
+    const filtered = (householderList as Array<Record<string, unknown>>).filter((householder) =>
+      matchesNormalizedSearch(query, [
+        String(householder.familyName ?? ""),
+        String(householder.givenName ?? ""),
+        `${String(householder.familyName ?? "")} ${String(householder.givenName ?? "")}`,
+        `${String(householder.familyName ?? "")}${String(householder.givenName ?? "")}`,
+        String(householder.familyNameKana ?? ""),
+        String(householder.givenNameKana ?? ""),
+        `${String(householder.familyNameKana ?? "")} ${String(householder.givenNameKana ?? "")}`,
+        `${String(householder.familyNameKana ?? "")}${String(householder.givenNameKana ?? "")}`,
+        String(householder[fields.code] ?? ""),
+        String(householder.address1 ?? ""),
+        String(householder.address2 ?? ""),
+        String(householder.address3 ?? ""),
+      ])
+    );
+
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error("GET /api/householder error:", error);
     return NextResponse.json({ error: (error as Error).message || "エラーが発生しました" }, { status: 500 });

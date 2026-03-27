@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getHouseholderFieldMap, getHouseholderModelKind, getMemberDelegate } from "@/lib/prisma-models";
 import { requireAuth } from "@/lib/require-auth";
+import { matchesNormalizedSearch } from "@/lib/search-normalize";
 
 export const runtime = "nodejs";
 
@@ -19,29 +20,11 @@ export async function GET(request: NextRequest) {
     };
     const fields = getHouseholderFieldMap(kind);
     const relationName = fields.relation;
-    const codeFilter = {
-      [relationName]: { [fields.code]: { contains: query, mode: "insensitive" } },
-    };
 
     const records = await memberDelegate.findMany({
       where: {
         deathDate: null,
         [relationName]: { isActive: true },
-        OR: query
-          ? [
-              { familyName: { contains: query, mode: "insensitive" } },
-              { givenName: { contains: query, mode: "insensitive" } },
-              { familyNameKana: { contains: query, mode: "insensitive" } },
-              { givenNameKana: { contains: query, mode: "insensitive" } },
-              { relation: { contains: query, mode: "insensitive" } },
-              { [relationName]: { familyName: { contains: query, mode: "insensitive" } } },
-              { [relationName]: { givenName: { contains: query, mode: "insensitive" } } },
-              codeFilter,
-              { [relationName]: { address1: { contains: query, mode: "insensitive" } } },
-              { [relationName]: { address2: { contains: query, mode: "insensitive" } } },
-              { [relationName]: { address3: { contains: query, mode: "insensitive" } } },
-            ]
-          : undefined,
       },
       include: {
         [relationName]: {
@@ -66,7 +49,30 @@ export async function GET(request: NextRequest) {
       orderBy: { id: "asc" },
     });
 
-    return NextResponse.json(records);
+    const filtered = (records as Array<Record<string, unknown>>).filter((record) => {
+      const householder = record[relationName] as Record<string, unknown> | null | undefined;
+      return matchesNormalizedSearch(query, [
+        String(record.familyName ?? ""),
+        String(record.givenName ?? ""),
+        `${String(record.familyName ?? "")} ${String(record.givenName ?? "")}`,
+        `${String(record.familyName ?? "")}${String(record.givenName ?? "")}`,
+        String(record.familyNameKana ?? ""),
+        String(record.givenNameKana ?? ""),
+        `${String(record.familyNameKana ?? "")} ${String(record.givenNameKana ?? "")}`,
+        `${String(record.familyNameKana ?? "")}${String(record.givenNameKana ?? "")}`,
+        String(record.relation ?? ""),
+        String(householder?.familyName ?? ""),
+        String(householder?.givenName ?? ""),
+        `${String(householder?.familyName ?? "")} ${String(householder?.givenName ?? "")}`,
+        `${String(householder?.familyName ?? "")}${String(householder?.givenName ?? "")}`,
+        String(householder?.[fields.code] ?? ""),
+        String(householder?.address1 ?? ""),
+        String(householder?.address2 ?? ""),
+        String(householder?.address3 ?? ""),
+      ]);
+    });
+
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error("GET /api/genzaicho error:", error);
     return NextResponse.json({ error: (error as Error).message || "エラーが発生しました" }, { status: 500 });
