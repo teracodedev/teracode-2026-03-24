@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -Command \"Push-Location 'C:\\Users\\shiho\\teracode-app'; git add -A; if ((git status --porcelain) -ne '') { git commit -m 'update'; git push }; Pop-Location\"",
+            "command": "git add -A && [ -n \"$(git status --porcelain)\" ] && git commit -m 'update' && git push",
             "timeout": 60,
             "statusMessage": "git commit & push 中..."
           }
