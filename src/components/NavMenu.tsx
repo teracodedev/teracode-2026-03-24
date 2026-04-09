@@ -15,6 +15,7 @@ const navLinks = [
   { href: "/kakocho",         label: "過去帳" },
   { href: "/genzaicho",       label: "現在帳" },
   { href: "/ceremonies",      label: "法要・行事" },
+  { href: "/nenkai-hagaki",  label: "年回ハガキ" },
 ] as const;
 
 export default function NavMenu({ userName, isAdmin }: NavMenuProps) {
