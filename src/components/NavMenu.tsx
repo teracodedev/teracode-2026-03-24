@@ -45,6 +45,12 @@ export default function NavMenu({ userName, isAdmin }: NavMenuProps) {
                     データインポート
                   </Link>
                   <Link
+                    href="/admin/backup"
+                    className="hover:text-stone-300 transition-colors font-medium whitespace-nowrap"
+                  >
+                    バックアップ
+                  </Link>
+                  <Link
                     href="/admin/accounts"
                     className="hover:text-stone-300 transition-colors font-medium whitespace-nowrap"
                   >
@@ -129,6 +135,13 @@ export default function NavMenu({ userName, isAdmin }: NavMenuProps) {
                     className="block py-3 px-3 rounded text-lg font-medium text-stone-100 hover:bg-stone-700 transition-colors"
                   >
                     データインポート
+                  </Link>
+                  <Link
+                    href="/admin/backup"
+                    onClick={() => setOpen(false)}
+                    className="block py-3 px-3 rounded text-lg font-medium text-stone-100 hover:bg-stone-700 transition-colors"
+                  >
+                    バックアップ
                   </Link>
                   <Link
                     href="/admin/accounts"
