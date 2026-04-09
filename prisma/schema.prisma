@@ -79,11 +79,15 @@ model HouseholderMember {
   gender         String?     // 性別
   birthDate      DateTime?   // 生年月日
   deathDate      DateTime?   // 命日
-  dharmaName     String?     // 法名
-  dharmaNameKana String?     // 法名（カナ）
-  note           String?     // 備考
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  dharmaName           String?   // 法名
+  dharmaNameKana       String?   // 法名（カナ）
+  note                 String?   // 備考
+  isAnnaiFuyo          Boolean   @default(false) // 案内不要
+  isKeijiFuyo          Boolean   @default(false) // 掲示不要
+  isNotePrintDisabled  Boolean   @default(false) // 備考印刷不可
+  isMeinichiFusho      Boolean   @default(false) // 命日不詳
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 }
 
 // 法要・行事
