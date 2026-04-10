@@ -261,9 +261,6 @@ export default function FamilyRegisterDetailPage({ params }: { params: Promise<{
                       </div>
                     )}
                   </div>
-                  <span className={`text-sm px-3 py-1 rounded-full font-medium ${h.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"}`}>
-                    {h.isActive ? "在籍" : "離檀"}
-                  </span>
                 </div>
 
                 {/* 基本情報 */}

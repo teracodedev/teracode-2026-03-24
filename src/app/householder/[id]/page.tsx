@@ -533,9 +533,6 @@ export default function HouseholderDetailPage({ params }: { params: Promise<{ id
       <div className="flex items-center gap-4">
         <Link href="/householder" className="text-stone-400 hover:text-stone-600 text-sm">← 一覧へ</Link>
         <h1 className="text-2xl font-bold text-stone-500">{householder.familyName} {householder.givenName}</h1>
-        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${householder.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"}`}>
-          {householder.isActive ? "在籍" : "離檀"}
-        </span>
       </div>
 
       <div className="flex gap-3 justify-end flex-wrap">

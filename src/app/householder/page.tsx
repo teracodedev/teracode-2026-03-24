@@ -173,11 +173,6 @@ export default function HouseholderPage() {
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        householder.isActive ? "bg-green-100 text-green-700" : "bg-stone-100 text-stone-500"
-                      }`}>
-                        {householder.isActive ? "在籍" : "離檀"}
-                      </span>
                       <span className="text-xs text-stone-400">{householder.members.length}名</span>
                     </div>
                   </div>
